@@ -1,0 +1,17 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "database": "ai-studio-android-christma-e4844dde-b02c-4981-88cd-732988fdf3b3",
+    "port": 8085,
+    "host": "127.0.0.1"
+  },
+  "emulators": {
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8085
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
+}

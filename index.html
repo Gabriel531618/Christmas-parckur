@@ -1,0 +1,2560 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Christmas Parkour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #071426;
+    --deep: #0E223D;
+    --nebula: #173659;
+    --ink: #0F172A;
+    --cyan: #4DABF7;
+    --cyan-l: #D0EBFF;
+    --green: #51CF66;
+    --pine-dark: #14532D;
+    --pine: #2FB344;
+    --red: #FA5252;
+    --pink: #E03131;
+    --gold: #FCC419;
+    --gold-l: #FFE066;
+    --orange: #FF922B;
+    --surface: #F8F9FA;
+    --snow: #F8FCFF;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--void);
+    font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    touch-action: none;
+  }
+
+  #app {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Neo-brutalist UI system */
+  .neo-box {
+    border: 3px solid var(--ink);
+    border-radius: 11px;
+    box-shadow: 0 3px 0 var(--ink);
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .neo-box:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--ink);
+  }
+
+  /* Top HUD matching FlowRow two-cluster Android layout */
+  #hud {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .hud-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 6px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.56);
+    pointer-events: auto;
+  }
+
+  .hud-cluster.left {
+    border: 1.5px solid rgba(81, 207, 102, 0.58);
+  }
+
+  .hud-cluster.right {
+    border: 1.5px solid rgba(250, 82, 82, 0.58);
+  }
+
+  .hero-badge-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: radial-gradient(circle, var(--pine-dark), var(--void));
+  }
+
+  .pill-btn {
+    height: 36px;
+    padding: 0 9px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .icon-sq-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 14px;
+  }
+
+  .coin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #FFF3BF, #FAB005);
+    border: 1.8px solid #7C4D00;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 900;
+    color: #5C3800;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .bg-white-sky { background: linear-gradient(180deg, #FFFFFF, #E7F5FF); color: var(--ink); }
+  .bg-gold { background: linear-gradient(180deg, var(--gold-l), var(--gold)); color: var(--ink); }
+  .bg-cyan { background: linear-gradient(180deg, var(--cyan-l), var(--cyan)); color: var(--ink); }
+  .bg-green { background: linear-gradient(180deg, #69DB7C, #2B8A3E); color: #fff; }
+  .bg-red { background: linear-gradient(180deg, #FF8787, var(--pink)); color: #fff; }
+  .bg-amber { background: linear-gradient(180deg, var(--gold-l), #F59F00); color: var(--ink); }
+  .bg-sky { background: linear-gradient(180deg, #D0EBFF, #74C0FC); color: var(--ink); }
+  .bg-mint { background: linear-gradient(180deg, #B2F2BB, #51CF66); color: var(--ink); }
+  .bg-frost { background: linear-gradient(180deg, #FFFFFF, #F1F3F5); color: var(--ink); }
+  .bg-blue { background: linear-gradient(180deg, #A5D8FF, #4DABF7); color: var(--ink); }
+
+  /* Center status strip (Boss HP & Ability / Dimension badges) */
+  #statusStrip {
+    position: absolute;
+    top: 96px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    pointer-events: none;
+    z-index: 18;
+    width: min(88vw, 330px);
+  }
+
+  .boss-bar-box {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.92);
+    border: 2.5px solid #82C91E;
+    border-radius: 12px;
+    padding: 5px 10px;
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    text-align: center;
+  }
+
+  .boss-title {
+    font-size: 10.5px;
+    font-weight: 900;
+    color: #FFE066;
+  }
+
+  .boss-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 6px;
+    background: #1E293B;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    overflow: hidden;
+  }
+
+  .boss-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #FA5252, #FCC419, #82C91E);
+    transition: width 0.12s linear;
+  }
+
+  .status-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .status-pill {
+    background: rgba(15, 23, 42, 0.92);
+    border: 2px solid var(--cyan);
+    border-radius: 12px;
+    padding: 4px 11px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .status-pill.village { border-color: var(--green); }
+
+  /* Dimension / Santa interactive prompt above bottom controls */
+  #dimensionPrompt {
+    position: absolute;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 22;
+    display: none;
+    gap: 10px;
+  }
+
+  .prompt-btn {
+    height: 46px;
+    padding: 0 16px;
+    border-radius: 16px;
+    font-size: 13px;
+    box-shadow: 0 4px 0 var(--ink);
+  }
+
+  /* Bottom Controls */
+  #controls {
+    position: absolute;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: 14px;
+    right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  .ctrl-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    pointer-events: auto;
+  }
+
+  .move-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    font-size: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(208,235,255,0.95));
+    color: var(--ink);
+    box-shadow: 0 5px 0 var(--ink);
+  }
+
+  .move-btn.pressed {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 var(--ink);
+    background: linear-gradient(180deg, #A5D8FF, #74C0FC);
+  }
+
+  .ability-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    flex-direction: column;
+    gap: 1px;
+    background: linear-gradient(180deg, var(--gold-l), #FF922B);
+    color: var(--ink);
+    box-shadow: 0 5px 0 var(--ink);
+    display: none;
+  }
+
+  .ability-btn.cd {
+    background: linear-gradient(180deg, #475569, #1E293B);
+    color: #CBD5E1;
+  }
+
+  .jump-btn {
+    width: 68px;
+    height: 68px;
+    border-radius: 22px;
+    font-size: 28px;
+    background: linear-gradient(180deg, #69DB7C, #2B8A3E);
+    color: #fff;
+    box-shadow: 0 6px 0 var(--ink);
+  }
+
+  .jump-btn.pressed {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+
+  /* Entrance Overlay */
+  #entranceOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #071426, #0E2A47, #14532D);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 50;
+  }
+
+  #entranceSnow {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .entrance-card {
+    position: relative;
+    width: 100%;
+    max-width: 345px;
+    max-height: 92vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #FFFFFF, #F0F9FF);
+    border: 3.5px solid var(--ink);
+    border-radius: 26px;
+    box-shadow: 0 8px 0 var(--ink);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    z-index: 2;
+  }
+
+  .ribbon-badge {
+    border: 2.5px solid var(--ink);
+    border-radius: 999px;
+    box-shadow: 0 2.5px 0 var(--ink);
+    background: linear-gradient(90deg, #E03131, #FCC419, #2B8A3E);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 4px 12px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .app-title {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .info-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .mini-tag {
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 900;
+    background: #E7F5FF;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mini-tag.gold { background: var(--gold-l); }
+
+  .menu-btn {
+    width: 78%;
+    max-width: 230px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 15px;
+    box-shadow: 0 4px 0 var(--ink);
+  }
+
+  /* Modals */
+  #modalBackdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 20, 38, 0.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    z-index: 60;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 470px;
+    max-height: 86vh;
+    background: linear-gradient(180deg, #FFFFFF, #F0F9FF);
+    border: 3.5px solid var(--ink);
+    border-radius: 24px;
+    box-shadow: 0 8px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+    background: linear-gradient(90deg, #0E223D, #173659);
+    color: #fff;
+    border-bottom: 3px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .modal-title {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: #FA5252;
+    color: #fff;
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card-panel {
+    border: 2.5px solid var(--ink);
+    border-radius: 16px;
+    background: #fff;
+    padding: 11px;
+    box-shadow: 0 3px 0 rgba(15, 23, 42, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .prog-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 99px;
+    background: #E2E8F0;
+    border: 2px solid var(--ink);
+    overflow: hidden;
+  }
+
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #51CF66, #2FB344);
+  }
+
+  .levels-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .lvl-tile {
+    height: 48px;
+    border-radius: 12px;
+    font-size: 14px;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filter-chip {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 11px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+    gap: 10px;
+  }
+
+  .hero-card {
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 4px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .rarity-tag {
+    font-size: 10px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1.8px solid var(--ink);
+    color: #fff;
+  }
+
+  .pass-tier-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .tier-badge {
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    background: #0F172A;
+    color: #FFE066;
+    font-weight: 900;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pass-slot {
+    border: 2.5px solid var(--ink);
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  /* Toast */
+  #toast {
+    position: absolute;
+    top: 104px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    background: #0F172A;
+    color: #fff;
+    border: 2.5px solid var(--gold);
+    border-radius: 14px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 900;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 80;
+    text-align: center;
+    max-width: 86vw;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- TOP HUD -->
+  <div id="hud">
+    <div class="hud-cluster left">
+      <button class="neo-box hero-badge-btn" id="btnHudHero" title="Magazin Eroi">
+        <canvas id="hudHeroCanvas" width="32" height="32"></canvas>
+      </button>
+      <button class="neo-box pill-btn bg-white-sky" id="btnLevels">
+        <span>🎄</span>
+        <span id="hudLevelText">Nivel 1 / ????</span>
+        <span style="font-size:9px">▼</span>
+      </button>
+      <div class="neo-box pill-btn bg-gold" style="cursor:default">
+        <span class="coin-dot">1</span>
+        <span id="hudCoins">0</span>
+      </div>
+      <div class="neo-box pill-btn bg-cyan" style="cursor:default">
+        <span>💎</span>
+        <span id="hudDiamonds">0</span>
+      </div>
+    </div>
+
+    <div class="hud-cluster right">
+      <button class="neo-box pill-btn bg-green" id="btnQuests">📜 Questuri</button>
+      <button class="neo-box pill-btn bg-red" id="btnShop">🛒 Shop</button>
+      <button class="neo-box pill-btn bg-amber" id="btnPass">🏆 Pass</button>
+      <button class="neo-box icon-sq-btn bg-sky" id="btnHudSettings" title="Setări">⚙️</button>
+      <button class="neo-box icon-sq-btn bg-mint" id="btnRotate" title="Mod Orizontal">🔄</button>
+      <button class="neo-box icon-sq-btn bg-frost" id="btnSound" title="Sunet">🔊</button>
+      <button class="neo-box icon-sq-btn bg-blue" id="btnRestart" title="Reîncepe">↻</button>
+    </div>
+  </div>
+
+  <!-- STATUS STRIP (Boss HP + Active Effects) -->
+  <div id="statusStrip">
+    <div class="boss-bar-box" id="bossBar">
+      <div class="boss-title" id="bossTitle">👑 BOSS GRINCH • 2.000 / 2.000 HP (Sari pe cap!)</div>
+      <div class="boss-track"><div class="boss-fill" id="bossFill"></div></div>
+    </div>
+    <div class="status-badges" id="statusBadges"></div>
+  </div>
+
+  <!-- DIMENSION / SANTA ACTION PROMPT -->
+  <div id="dimensionPrompt">
+    <button class="neo-box prompt-btn bg-green" id="btnPromptAction">🎄 Deschide Ușa Bradului</button>
+  </div>
+
+  <!-- BOTTOM CONTROLS -->
+  <div id="controls">
+    <div class="ctrl-group">
+      <button class="neo-box move-btn" id="btnLeft">◀</button>
+      <button class="neo-box move-btn" id="btnRight">▶</button>
+    </div>
+    <div class="ctrl-group">
+      <button class="neo-box ability-btn" id="btnAbility">
+        <span id="abIcon" style="font-size:20px;line-height:1">⚡</span>
+        <span id="abLabel" style="font-size:9px;font-weight:900">GATA</span>
+      </button>
+      <button class="neo-box jump-btn" id="btnJump">▲</button>
+    </div>
+  </div>
+
+  <!-- ENTRANCE OVERLAY -->
+  <div id="entranceOverlay">
+    <canvas id="entranceSnow"></canvas>
+    <div class="entrance-card">
+      <div class="ribbon-badge">🎄 CHRISTMAS PARKOUR 🎄</div>
+      <canvas id="entranceHeroCanvas" width="76" height="76"></canvas>
+      <h1 class="app-title">Christmas Parkour</h1>
+      <div class="info-row">
+        <div class="mini-tag" id="entMetaTag">Nivel 1 • Om de Zăpadă</div>
+        <div class="mini-tag gold"><span class="coin-dot">1</span><span id="entCoinsTag">0</span></div>
+      </div>
+      <button class="neo-box menu-btn bg-green" id="btnMenuPlay">▶ PLAY</button>
+      <button class="neo-box menu-btn bg-cyan" id="btnMenuSettings">⚙️ SETTINGS</button>
+      <button class="neo-box menu-btn bg-red" id="btnMenuExit">🚪 EXIT</button>
+    </div>
+  </div>
+
+  <!-- MODAL BACKDROP -->
+  <div id="modalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Titlu</h2>
+        <button class="neo-box modal-close" id="btnModalClose">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const SAVE_KEY = 'christmas_parkour_save_v1';
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const PREMIUM_COST = 350;
+  const INK = '#0F172A';
+
+  const RARITY = {
+    comun:    { id: 'comun',    label: 'Comun',    tag: 'COMUN',       color: '#ADB5BD' },
+    rar:      { id: 'rar',      label: 'Rar',      tag: 'RAR',         color: '#20C997' },
+    epic:     { id: 'epic',     label: 'Epic',     tag: 'EPIC',        color: '#4DABF7' },
+    mitic:    { id: 'mitic',    label: 'Mitic',    tag: 'MITIC',       color: '#FF6B6B' },
+    legendar: { id: 'legendar', label: 'Legendar', tag: '🔥 LEGENDAR', color: '#F76707' },
+    divin:    { id: 'divin',    label: 'Divin',    tag: '✨ DIVIN',    color: '#F59F00' }
+  };
+
+  const HEROES = [
+    { id: 'om_de_zapada', name: 'Om de Zăpadă', rarity: 'comun', price: 0, currency: 'FREE', desc: 'Omuleț vesel de zăpadă cu fular fluturând, halou polar și cristale orbitale.', trail: '#74C0FC', eff: '❄️ Halou Polar & Cristale' },
+    { id: 'turta_dulce', name: 'Turtă Dulce', rarity: 'comun', price: 15, currency: 'COINS', desc: 'Prăjitură crocantă de Crăciun cu glazură dulce și scântei de scorțișoară.', trail: '#FF922B' },
+    { id: 'cadou_magic', name: 'Cadou Magic', rarity: 'comun', price: 20, currency: 'COINS', desc: 'Cutie de cadou roșu-aurie cu fundă săltăreață și sclipici festiv.', trail: '#FA5252' },
+    { id: 'bradut_vesel', name: 'Brăduț Vesel', rarity: 'comun', price: 25, currency: 'COINS', desc: 'Brăduț verde plin de beculețe colorate și aură de cetină proaspătă.', trail: '#2FB344' },
+    { id: 'renul_rudolf', name: 'Renul Rudolf', rarity: 'rar', price: 35, currency: 'COINS', desc: 'Ren rapid cu coarne aurii, nas roșu luminos și praf de stele.', trail: '#FF6B6B' },
+    { id: 'spiridus_jucaus', name: 'Spiriduș Jucăuș', rarity: 'rar', price: 0, currency: 'PASS', passTier: 3, desc: 'Ajutorul lui Moș Crăciun cu clopoțel de aur (Premium Pass Tier 3).', trail: '#51CF66' },
+    { id: 'acadea_ninja', name: 'Acadea Ninja', rarity: 'rar', price: 50, currency: 'COINS', desc: 'Ninja dulce cu stele de mentă rotative și dâră de zahăr.', trail: '#FF8787' },
+    { id: 'pinguin_polar', name: 'Pinguin Polar', rarity: 'epic', price: 75, gemPrice: 4, currency: 'COINS', desc: 'Pinguin alunecos cu căciulă de iarnă și unde de gheață albastră.', trail: '#4DABF7' },
+    { id: 'clopotel_magic', name: 'Clopoțelul Magic', rarity: 'epic', price: 85, gemPrice: 5, currency: 'COINS', desc: 'Clopoțel auriu de sanie cu fundă de catifea și unde sonore aurii.', trail: '#FCC419', eff: '🔔 Unde Sonore Aurii' },
+    { id: 'vrajitoarea_ghetii', name: 'Vrăjitoarea Gheții', rarity: 'epic', price: 0, currency: 'PASS', passTier: 6, desc: 'Magiciană polară cu rune de cristal (Premium Pass Tier 6).', trail: '#74C0FC' },
+    { id: 'urs_polar_festiv', name: 'Urs Polar Festiv', rarity: 'epic', price: 95, gemPrice: 6, currency: 'COINS', desc: 'Ursuleț blănos cu căciulă de Moș și halou de auroră boreală.', trail: '#A5D8FF' },
+    { id: 'regele_ghetii', name: 'Regele Gheții', rarity: 'mitic', price: 0, currency: 'PASS', passTier: 9, desc: 'Monarh polar cu coroană de safir (Premium Pass Tier 9).', trail: '#66D9E8' },
+    { id: 'steaua_craciunului', name: 'Steaua Crăciunului', rarity: 'mitic', price: 160, gemPrice: 12, currency: 'COINS', desc: 'Stea aurie strălucitoare cu inel festiv și praf magic de Crăciun.', trail: '#FFD43B' },
+    { id: 'dragon_de_gheata', name: 'Dragonul de Gheață', rarity: 'legendar', price: 220, gemPrice: 18, currency: 'COINS', desc: 'Dragon legendar al iernii învăluit în cristale de gheață și foc polar.', trail: '#3BC9DB' },
+    { id: 'vulpea_polara', name: 'Vulpea Polară', rarity: 'legendar', price: 235, gemPrice: 19, currency: 'COINS', desc: 'Vulpe albă a nordului cu coadă pufoasă și sclipiri de auroră.', trail: '#99E9F2', eff: '🦊 Petale de Gheață' },
+    { id: 'spargatorul_de_nuci', name: 'Spărgătorul de Nuci', rarity: 'legendar', price: 250, gemPrice: 20, currency: 'COINS', desc: 'Soldat regal de Crăciun cu săbii aurii rotative și armură festivă.', trail: '#FA5252' },
+    { id: 'mos_craciun_turbo', name: 'Moș Crăciun Turbo', rarity: 'divin', price: 290, gemPrice: 24, currency: 'COINS', desc: 'Moș Crăciun cu barbă pufoasă și scântei de mare viteză.', trail: '#E03131', abName: 'Sleigh Dash', abIcon: '🎅', abType: 'DASH', cd: 4.0, abDesc: 'Te teleportează înainte spulberând laserele și goblinii.' },
+    { id: 'jack_frost_divin', name: 'Jack Frost Divin', rarity: 'divin', price: 310, gemPrice: 25, currency: 'COINS', desc: 'Stăpânul viscolului cu coroană de gheață și vârtej cristalin.', trail: '#3BC9DB', abName: 'Viscol Polar', abIcon: '🌨️', abType: 'BLIZZARD', cd: 5.0, abDesc: 'Oprește laserele și goblinii 4.5s + viteză mare.' },
+    { id: 'aurora_boreala_divin', name: 'Aurora Boreală', rarity: 'divin', price: 330, gemPrice: 27, currency: 'COINS', desc: 'Spirit celest al luminilor nordice cu panglici prismatice.', trail: '#38D9A9', abName: 'Explozie Aurorală', abIcon: '🌌', abType: 'AURORA_NOVA', cd: 4.5, abDesc: 'Salt înalt, invulnerabilitate și magnet de monede 4.5s.' },
+    { id: 'ingerul_zapezii', name: 'Îngerul Zăpezii', rarity: 'divin', price: 340, gemPrice: 28, currency: 'COINS', desc: 'Înger luminos cu aripi albe-aurii și inel de gheață temporală.', trail: '#74C0FC', abName: 'Frost-Slow', abIcon: '❄️', abType: 'SLOWMO', cd: 5.0, abDesc: 'Încetinește inamicii la 40% timp de 4s + Triplu-Salt.' },
+    { id: 'craciunita_stelara', name: 'Crăciunița Stelară', rarity: 'divin', price: 360, gemPrice: 30, currency: 'COINS', desc: 'Crăciunița regală în mantie stacojie cu confetti aurii.', trail: '#F06595', abName: 'Ploaie Cadouri', abIcon: '🎁', abType: 'PRESENT_BARRAGE', cd: 5.0, abDesc: 'Spulberă obstacolele și oferă +3 🪙 instant.' },
+    { id: 'mos_nicolae_astral', name: 'Moș Nicolae Astral', rarity: 'divin', price: 390, gemPrice: 32, currency: 'COINS', desc: 'Legendă divină cu mitră aurie și comete de acadea.', trail: '#FFD43B', abName: 'Turbo Acadea', abIcon: '🍬', abType: 'CANDY_TURBO', cd: 4.0, abDesc: '4s hyper-viteză (+55%) și scut invincibil.' },
+    { id: 'phoenix_festiv', name: 'Phoenix Festiv', rarity: 'divin', price: 0, currency: 'PASS', passTier: 12, desc: 'Pasăre magică roșu-aurie (Premium Pass Tier 12).', trail: '#FF6B6B', abName: 'Festive Flight', abIcon: '🔥', abType: 'SOLAR', cd: 5.0, abDesc: 'Zbor magic 4s + Scut Festiv automat.' },
+    { id: 'spiritul_craciunului', name: 'Spiritul Crăciunului', rarity: 'divin', price: 0, currency: 'PASS', passTier: 15, desc: 'Spiritul suprem al Crăciunului (Premium Pass Tier 15).', trail: '#51CF66', abName: 'Zero-G + Magnet', abIcon: '🎄', abType: 'ZEROG', cd: 4.5, abDesc: 'Plutești 5s fără gravitație și atragi toate monedele.' }
+  ];
+
+  const STANDARD_QUESTS = [
+    { id: 'q_lvl5', name: 'Cuceritorul Polului Nord', sub: 'Completează 5 niveluri de Crăciun.', statKey: 'levelsDone', target: 5, reward: 50 },
+    { id: 'q_int6', name: 'Apărătorul Atelierului', sub: 'Elimină 6 goblini elfi sărind pe capul lor.', statKey: 'intrudersKilled', target: 6, reward: 55 },
+    { id: 'q_coin100', name: 'Sacul cu Monede', sub: 'Colectează 100 de monede de aur.', statKey: 'coinsGot', target: 100, reward: 60 },
+    { id: 'q_jump60', name: 'Salturi cu Zăpadă', sub: 'Fă 60 de sărituri cu bule și zăpadă.', statKey: 'jumpsMade', target: 60, reward: 45 }
+  ];
+
+  const SANTA_QUESTS = [
+    { id: 'sq_gifts', icon: '🎁', name: 'Cadourile Săniei Mari', sub: 'Adună 10 cutii de cadouri din Satul lui Moș Crăciun.', statKey: 'giftsDelivered', target: 10, reward: 95 },
+    { id: 'sq_houses', icon: '🏠', name: 'Luminile Căsuțelor', sub: 'Aprinde luminile festive la 5 căsuțe din sat.', statKey: 'housesVisited', target: 5, reward: 80 },
+    { id: 'sq_bubbles', icon: '🫧', name: 'Salturi cu Bule de Iarnă', sub: 'Execută 25 de sărituri cu bule.', statKey: 'bubbleJumps', target: 25, reward: 70 },
+    { id: 'sq_coins', icon: '🛷', name: 'Combustibil Aurit pentru Reni', sub: 'Colectează 45 de monede în aventură.', statKey: 'sleighCoins', target: 45, reward: 110 }
+  ];
+
+  const SEASON_TIERS = Array.from({ length: 15 }, (_, idx) => {
+    const t = idx + 1;
+    let free = { kind: 'coins', amount: 15 + t * 3, icon: '🪙', text: `+${15 + t * 3} Monede` };
+    if (t === 4 || t === 11) free = { kind: 'coins', amount: 35 + t * 2, icon: '🪙', text: `+${35 + t * 2} Monede` };
+    else if (t === 7) free = { kind: 'coins', amount: 55, icon: '💰', text: '+55 Monede' };
+    else if (t === 10) free = { kind: 'coins', amount: 85, icon: '💰', text: '+85 Monede' };
+    else if (t === 15) free = { kind: 'coins', amount: 120, icon: '💰', text: '+120 Monede' };
+
+    let prem;
+    if (t === 3) prem = { kind: 'hero', heroId: 'spiridus_jucaus', icon: '🧝', text: 'Spiriduș Jucăuș (RAR)' };
+    else if (t === 6) prem = { kind: 'hero', heroId: 'vrajitoarea_ghetii', icon: '❄️', text: 'Vrăjitoarea Gheții (EPIC)' };
+    else if (t === 9) prem = { kind: 'hero', heroId: 'regele_ghetii', icon: '👑', text: 'Regele Gheții (MITIC)' };
+    else if (t === 12) prem = { kind: 'hero', heroId: 'phoenix_festiv', icon: '🔥', text: 'Phoenix Festiv (DIVIN)' };
+    else if (t === 15) prem = { kind: 'hero', heroId: 'spiritul_craciunului', icon: '🎄', text: 'Spiritul Crăciunului (DIVIN)' };
+    else if (t % 2 === 0) prem = { kind: 'diamonds', amount: 5, icon: '💎', text: '+5 Diamante' };
+    else prem = { kind: 'coins', amount: 45 + t * 6, icon: '💰', text: `+${45 + t * 6} Monede` };
+    return { tier: t, free, prem };
+  });
+
+  function defaultProgress() {
+    return {
+      coins: 0,
+      diamonds: 0,
+      currentLevel: 1,
+      unlockedLevel: 1,
+      completedLevels: [],
+      ownedHeroes: ['om_de_zapada'],
+      equippedHero: 'om_de_zapada',
+      passXP: 0,
+      premiumUnlocked: false,
+      claimedFree: [],
+      claimedPrem: [],
+      lastDailyTs: 0,
+      lastBonusQuestTs: 0,
+      stats: { levelsDone: 0, intrudersKilled: 0, coinsGot: 0, jumpsMade: 0 },
+      bonusStats: { levelsDone: 0, intrudersKilled: 0, coinsGot: 0 },
+      santaStats: { giftsDelivered: 0, housesVisited: 0, bubbleJumps: 0, sleighCoins: 0, claimedSantaQuests: [], grandSleighClaimed: false }
+    };
+  }
+
+  let progress = loadProgress();
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return defaultProgress();
+      const d = defaultProgress();
+      const p = JSON.parse(raw);
+      return {
+        ...d,
+        ...p,
+        stats: { ...d.stats, ...(p.stats || {}) },
+        bonusStats: { ...d.bonusStats, ...(p.bonusStats || {}) },
+        santaStats: { ...d.santaStats, ...(p.santaStats || {}) }
+      };
+    } catch { return defaultProgress(); }
+  }
+  function saveProgress() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch {}
+  }
+
+  function findHero(id) { return HEROES.find(h => h.id === id) || HEROES[0]; }
+  function fmtNum(n) { return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function fmtTimer(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = String(Math.floor(s / 3600)).padStart(2, '0');
+    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const sec = String(s % 60).padStart(2, '0');
+    return `${h}:${m}:${sec}`;
+  }
+
+  /* Web Audio Synthesizer */
+  const audio = {
+    muted: false,
+    ctx: null,
+    tone(freq, dur, type = 'sine', gain = 0.08, delay = 0) {
+      if (this.muted) return;
+      try {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const t = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(gain, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.connect(g); g.connect(this.ctx.destination);
+        osc.start(t); osc.stop(t + dur);
+      } catch {}
+    },
+    jump() { this.tone(360, 0.11, 'triangle', 0.09); this.tone(540, 0.11, 'sine', 0.06, 0.04); },
+    coin() { this.tone(987, 0.08, 'sine', 0.08); this.tone(1318, 0.14, 'sine', 0.08, 0.06); },
+    diamond() { this.tone(880, 0.08, 'triangle', 0.08); this.tone(1174, 0.09, 'triangle', 0.08, 0.05); this.tone(1567, 0.16, 'sine', 0.09, 0.1); },
+    stomp() { this.tone(240, 0.09, 'square', 0.07); this.tone(440, 0.12, 'triangle', 0.07, 0.04); },
+    hurt() { this.tone(170, 0.18, 'sawtooth', 0.08); this.tone(110, 0.22, 'sawtooth', 0.07, 0.08); },
+    win() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.16, 'triangle', 0.09, i * 0.08)); },
+    click() { this.tone(620, 0.05, 'sine', 0.05); },
+    door() { this.tone(523, 0.14, 'sine', 0.08); this.tone(784, 0.2, 'triangle', 0.09, 0.09); }
+  };
+
+  /* Level Generator (matches Kotlin LevelGenerator.kt) */
+  function hashRng(seed) {
+    const v = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+    return v - Math.floor(v);
+  }
+  const GOBLIN_CYCLE = ['SCOUT', 'TINKER', 'FLYER', 'BOUNCY'];
+
+  function buildLevel(lvl) {
+    const platforms = [];
+    const coins = [];
+    const diamonds = [];
+    const lasers = [];
+    const bouncePads = [];
+    const goblins = [];
+    const beacons = [];
+    const checkpoints = [];
+
+    const diff = Math.min(1.0, (lvl - 1) / 35);
+    const segments = 6 + Math.min(14, Math.floor(Math.log2(lvl + 1) * 2.2));
+    platforms.push({ x: 0, y: 360, w: 340, h: 440, kind: 'SOLID', baseX: 0, baseY: 360, origY: 360, dx: 0, dy: 0, triggered: false, timer: 0, vy: 0 });
+    const startTree = { x: 212, y: 360, hasDoor: true };
+
+    let cx = 340, cy = 360;
+    const cpSeg = Math.floor(segments / 2);
+    const cpSeg2 = segments >= 12 ? Math.floor((segments * 3) / 4) : -1;
+
+    for (let i = 0; i < segments; i++) {
+      const r1 = hashRng(lvl * 107 + i * 23);
+      const r2 = hashRng(lvl * 229 + i * 41);
+      const pat = Math.floor(r1 * 8);
+      const kind = GOBLIN_CYCLE[(lvl + i) % GOBLIN_CYCLE.length];
+      const extraGap = Math.floor(diff * 44);
+      const shrinkW = Math.floor(diff * 42);
+      const spdMult = 1 + diff * 0.95;
+      let cpX = null, cpY = null;
+
+      if (lvl === 1 && i === 0) {
+        coins.push({ x: cx + 45, y: cy - 55, taken: false });
+        cx += 105;
+        const w = 240;
+        platforms.push({ x: cx, y: cy, w, h: 440, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        coins.push({ x: cx + 80, y: cy - 35, taken: false });
+        coins.push({ x: cx + 135, y: cy - 35, taken: false });
+        goblins.push({ kind: 'SCOUT', x: cx + 135, y: cy - 36, baseY: cy - 36, w: 34, h: 36, minX: cx + 18, maxX: cx + w - 52, vx: 1.4, vy: 0, alive: true, phase: 0 });
+        cpX = cx + 65; cpY = cy; cx += w;
+      } else if (pat === 0) {
+        const gap = Math.min(165, 95 + extraGap + Math.floor(r2 * 24));
+        cy = Math.max(170, Math.min(440, cy + (i % 2 === 0 ? -46 : 36)));
+        coins.push({ x: cx + gap / 2, y: cy - 45, taken: false });
+        cx += gap;
+        const w = Math.max(135, 225 - shrinkW);
+        platforms.push({ x: cx, y: cy, w, h: 440, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        if (i % 2 === 0) beacons.push({ x: cx + 24, y: cy, color: '#FA5252' });
+        if (w >= 165 && (lvl >= 2 || i > 1)) {
+          if (r2 > 0.42) {
+            goblins.push({ kind, x: cx + w * 0.5, y: cy - 36, baseY: cy - 36, w: 34, h: 36, minX: cx + 12, maxX: cx + w - 46, vx: (1.45 + diff * 1.4) * (i % 2 === 0 ? 1 : -1), vy: 0, alive: true, phase: i * 1.1 });
+          } else {
+            lasers.push({ x: cx + 24, y: cy, baseX: cx + 24, baseY: cy, w: 14, h: 52, axis: 'H', range: Math.max(44, w - 62), speed: 1.9 + diff * 1.1, phase: i * 0.9, broken: false });
+          }
+          coins.push({ x: cx + w / 2, y: cy - 70, taken: false });
+        }
+        cpX = cx + 38; cpY = cy; cx += w;
+      } else if (pat === 1) {
+        bouncePads.push({ x: cx - 44, y: cy, w: 36, h: 14, squash: 0 });
+        const highY = Math.max(135, cy - 140);
+        coins.push({ x: cx + 35, y: highY - 30, taken: false });
+        coins.push({ x: cx + 75, y: highY - 45, taken: false });
+        cx += 120; cy = highY;
+        const w = Math.max(135, 195 - shrinkW);
+        platforms.push({ x: cx, y: cy, w, h: 500, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        if (lvl >= 3 && w >= 150) {
+          goblins.push({ kind: 'FLYER', x: cx + 40, y: cy - 38, baseY: cy - 38, w: 34, h: 36, minX: cx + 12, maxX: cx + w - 46, vx: 1.55 * spdMult, vy: 0, alive: true, phase: i });
+        }
+        cpX = cx + 45; cpY = cy; cx += w;
+      } else if (pat === 2) {
+        cx += 75;
+        platforms.push({ x: cx, y: cy, w: Math.max(88, 118 - Math.floor(diff * 24)), h: 26, kind: 'MOVE_H', baseX: cx, baseY: cy, origY: cy, range: 115 + Math.floor(diff * 35), speed: (1.4 + r2 * 0.6) * spdMult, phase: i, dx: 0, dy: 0 });
+        coins.push({ x: cx + 55, y: cy - 40, taken: false });
+        cx += 245;
+        platforms.push({ x: cx, y: cy, w: 165, h: 440, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        cpX = cx + 75; cpY = cy; cx += 165;
+      } else if (pat === 3 && lvl >= 2) {
+        const cnt = lvl >= 8 ? 3 : 2;
+        for (let f = 0; f < cnt; f++) {
+          cx += 85;
+          platforms.push({ x: cx, y: cy, w: 92, h: 24, kind: 'FALL', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0, triggered: false, timer: 0, vy: 0 });
+          coins.push({ x: cx + 46, y: cy - 35, taken: false });
+          cx += 92;
+        }
+        cx += 85;
+        platforms.push({ x: cx, y: cy, w: 165, h: 440, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        cpX = cx + 75; cpY = cy; cx += 165;
+      } else if (pat === 4 && lvl >= 3) {
+        cx += 80;
+        const liftY = Math.min(410, cy + 30);
+        platforms.push({ x: cx, y: liftY, w: 105, h: 26, kind: 'MOVE_V', baseX: cx, baseY: liftY, origY: liftY, range: 120, speed: 1.5 * spdMult, phase: i * 1.2, dx: 0, dy: 0 });
+        cy = liftY - 105; cx += 155;
+        platforms.push({ x: cx, y: cy, w: 175, h: 500, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        cpX = cx + 80; cpY = cy; cx += 175;
+      } else {
+        cx += 95 + Math.floor(diff * 24);
+        const w = 250;
+        platforms.push({ x: cx, y: cy, w, h: 440, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+        lasers.push({ x: cx + 32, y: cy, baseX: cx + 32, baseY: cy, w: 14, h: 50, axis: i % 2 === 0 ? 'H' : 'V', range: i % 2 === 0 ? 172 : 54, speed: 2.0 + diff * 1.15, phase: i * 1.3, broken: false });
+        platforms.push({ x: cx + 75, y: cy - 112, w: 100, h: 22, kind: 'SOLID', baseX: cx + 75, baseY: cy - 112, origY: cy - 112, dx: 0, dy: 0 });
+        goblins.push({ kind: 'BOUNCY', x: cx + 95, y: cy - 148, baseY: cy - 148, w: 32, h: 36, minX: cx + 78, maxX: cx + 142, vx: 1.3 * spdMult, vy: 0, alive: true, phase: i });
+        coins.push({ x: cx + 105, y: cy - 156, taken: false });
+        coins.push({ x: cx + 145, y: cy - 156, taken: false });
+        cpX = cx + 45; cpY = cy; cx += w;
+      }
+
+      if ((i === cpSeg || i === cpSeg2) && cpX !== null) checkpoints.push({ x: cpX, y: cpY, activated: false });
+      if (i === Math.floor(segments / 2)) diamonds.push({ x: cx - 55, y: cy - 95, taken: false });
+    }
+
+    let boss = null;
+    if (lvl === 10) {
+      cx += 85;
+      const arenaW = 500;
+      platforms.push({ x: cx, y: cy, w: arenaW, h: 480, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+      checkpoints.push({ x: cx + 36, y: cy, activated: false });
+      bouncePads.push({ x: cx + 72, y: cy, w: 36, h: 14, squash: 0 });
+      bouncePads.push({ x: cx + arenaW - 92, y: cy, w: 36, h: 14, squash: 0 });
+      platforms.push({ x: cx + 100, y: cy - 132, w: 82, h: 20, kind: 'SOLID', baseX: cx + 100, baseY: cy - 132, origY: cy - 132, dx: 0, dy: 0 });
+      platforms.push({ x: cx + arenaW - 182, y: cy - 132, w: 82, h: 20, kind: 'SOLID', baseX: cx + arenaW - 182, baseY: cy - 132, origY: cy - 132, dx: 0, dy: 0 });
+      coins.push({ x: cx + 141, y: cy - 166, taken: false });
+      coins.push({ x: cx + arenaW - 141, y: cy - 166, taken: false });
+      beacons.push({ x: cx + 22, y: cy, color: '#FA5252' }, { x: cx + arenaW - 22, y: cy, color: '#FCC419' });
+      boss = { kind: 'ELF10', name: 'BOSS ELF COMANDANT', x: cx + arenaW * 0.5 - 32, y: cy - 76, baseY: cy - 76, w: 64, h: 76, minX: cx + 118, maxX: cx + arenaW - 182, vx: 1.95, vy: 0, hp: 400, maxHp: 400, dmg: 40, alive: true, flash: 0, jumpCd: 1.6, hurtCd: 0 };
+      cx += arenaW;
+    } else if (lvl === 20) {
+      cx += 90;
+      const arenaW = 540;
+      platforms.push({ x: cx, y: cy, w: arenaW, h: 480, kind: 'SOLID', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+      checkpoints.push({ x: cx + 38, y: cy, activated: false });
+      bouncePads.push({ x: cx + 76, y: cy, w: 38, h: 14, squash: 0 });
+      bouncePads.push({ x: cx + arenaW - 96, y: cy, w: 38, h: 14, squash: 0 });
+      platforms.push({ x: cx + 125, y: cy - 115, w: 95, h: 20, kind: 'SOLID', baseX: cx + 125, baseY: cy - 115, origY: cy - 115, dx: 0, dy: 0 });
+      platforms.push({ x: cx + arenaW - 220, y: cy - 115, w: 95, h: 20, kind: 'SOLID', baseX: cx + arenaW - 220, baseY: cy - 115, origY: cy - 115, dx: 0, dy: 0 });
+      coins.push({ x: cx + 172, y: cy - 150, taken: false });
+      coins.push({ x: cx + arenaW - 172, y: cy - 150, taken: false });
+      beacons.push({ x: cx + 22, y: cy, color: '#FA5252' }, { x: cx + arenaW - 22, y: cy, color: '#51CF66' });
+      boss = { kind: 'GRINCH20', name: 'BOSS GRINCH', x: cx + arenaW * 0.5 - 36, y: cy - 84, baseY: cy - 84, w: 72, h: 84, minX: cx + 122, maxX: cx + arenaW - 188, vx: 2.25, vy: 0, hp: 2000, maxHp: 2000, dmg: 100, alive: true, flash: 0, jumpCd: 1.5, hurtCd: 0 };
+      cx += arenaW;
+    }
+
+    cx += 95;
+    platforms.push({ x: cx, y: cy, w: 340, h: 480, kind: 'FINISH', baseX: cx, baseY: cy, origY: cy, dx: 0, dy: 0 });
+    beacons.push({ x: cx + 65, y: cy, color: '#51CF66' }, { x: cx + 135, y: cy, color: '#FCC419' });
+
+    return {
+      lvl, dim: 'MAIN', startTree, platforms, coins, diamonds, lasers, bouncePads, goblins, beacons, checkpoints,
+      goal: { x: cx + 235, y: cy, w: 56, h: 86 }, boss, houses: [], gifts: [], sleigh: null, returnDoor: null, deathY: 760
+    };
+  }
+
+  function buildSantaVillage(lvl) {
+    const platforms = [
+      { x: 0, y: 360, w: 1880, h: 440, kind: 'SOLID', baseX: 0, baseY: 360, origY: 360, dx: 0, dy: 0 },
+      { x: 240, y: 246, w: 135, h: 20, kind: 'SOLID', baseX: 240, baseY: 246, origY: 246, dx: 0, dy: 0 },
+      { x: 455, y: 224, w: 155, h: 20, kind: 'SOLID', baseX: 455, baseY: 224, origY: 224, dx: 0, dy: 0 },
+      { x: 1230, y: 238, w: 145, h: 20, kind: 'SOLID', baseX: 1230, baseY: 238, origY: 238, dx: 0, dy: 0 },
+      { x: 1470, y: 216, w: 160, h: 20, kind: 'SOLID', baseX: 1470, baseY: 216, origY: 216, dx: 0, dy: 0 },
+      { x: 805, y: 240, w: 170, h: 20, kind: 'MOVE_V', baseX: 805, baseY: 240, origY: 240, range: 34, speed: 1.1, phase: 0, dx: 0, dy: 0 }
+    ];
+    const houses = [
+      { id: 1, x: 220, y: 360, w: 150, h: 114, wall: '#D97706', roof: '#B91C1C', lit: false },
+      { id: 2, x: 410, y: 360, w: 175, h: 138, wall: '#9F1239', roof: '#15803D', lit: false },
+      { id: 3, x: 615, y: 360, w: 135, h: 108, wall: '#1D4ED8', roof: '#991B1B', lit: false },
+      { id: 4, x: 1045, y: 360, w: 145, h: 116, wall: '#047857', roof: '#C92A2A', lit: false },
+      { id: 5, x: 1220, y: 360, w: 165, h: 132, wall: '#7C2D12', roof: '#1E40AF', lit: false },
+      { id: 6, x: 1425, y: 360, w: 180, h: 144, wall: '#6D28D9', roof: '#DC2626', lit: false },
+      { id: 7, x: 1645, y: 360, w: 155, h: 118, wall: '#B45309', roof: '#166534', lit: false }
+    ];
+    const gifts = [
+      { x: 260, y: 342, taken: false, c: '#E03131', r: '#FCC419' },
+      { x: 305, y: 224, taken: false, c: '#2FB344', r: '#FFE066' },
+      { x: 485, y: 342, taken: false, c: '#339AF0', r: '#FFFFFF' },
+      { x: 535, y: 202, taken: false, c: '#F06595', r: '#FCC419' },
+      { x: 670, y: 342, taken: false, c: '#FCC419', r: '#E03131' },
+      { x: 890, y: 200, taken: false, c: '#E03131', r: '#51CF66' },
+      { x: 1095, y: 342, taken: false, c: '#845EF7', r: '#FFE066' },
+      { x: 1295, y: 216, taken: false, c: '#2FB344', r: '#E03131' },
+      { x: 1340, y: 342, taken: false, c: '#E03131', r: '#FCC419' },
+      { x: 1545, y: 194, taken: false, c: '#339AF0', r: '#FCC419' },
+      { x: 1615, y: 342, taken: false, c: '#F76707', r: '#FFFFFF' },
+      { x: 1720, y: 342, taken: false, c: '#2FB344', r: '#FFE066' }
+    ];
+    const coins = [
+      { x: 270, y: 220, taken: false }, { x: 340, y: 220, taken: false },
+      { x: 500, y: 196, taken: false }, { x: 570, y: 196, taken: false },
+      { x: 845, y: 196, taken: false }, { x: 935, y: 196, taken: false },
+      { x: 1265, y: 210, taken: false }, { x: 1510, y: 188, taken: false },
+      { x: 1590, y: 188, taken: false }, { x: 1775, y: 315, taken: false }
+    ];
+    const diamonds = [
+      { x: 535, y: 165, taken: false }, { x: 890, y: 158, taken: false }, { x: 1550, y: 155, taken: false }
+    ];
+    return {
+      lvl, dim: 'VILLAGE', startTree: { x: 92, y: 360, hasDoor: false },
+      platforms, coins, diamonds, lasers: [],
+      bouncePads: [{ x: 185, y: 360, w: 34, h: 14, squash: 0 }, { x: 1185, y: 360, w: 34, h: 14, squash: 0 }],
+      goblins: [], checkpoints: [],
+      beacons: [
+        { x: 392, y: 360, color: '#FA5252' }, { x: 598, y: 360, color: '#51CF66' },
+        { x: 1025, y: 360, color: '#FCC419' }, { x: 1406, y: 360, color: '#4DABF7' },
+        { x: 1628, y: 360, color: '#FA5252' }
+      ],
+      goal: { x: 99999, y: 360, w: 56, h: 86 }, boss: null,
+      houses, gifts, sleigh: { x: 870, y: 360 }, returnDoor: { x: 92, y: 360 }, deathY: 760
+    };
+  }
+
+  /* Engine State */
+  const engine = {
+    lvlData: buildLevel(progress.currentLevel),
+    savedMain: null,
+    hero: { x: 65, y: 260, w: 38, h: 38, vx: 0, vy: 0, speed: 5.3, jumpVel: -12.7, grav: 0.58, grounded: false, coyote: 0, jumpBuf: 0, jumpsLeft: 2, dir: 1, sx: 1, sy: 1, tilt: 0, bobY: 0, ridePlat: null },
+    power: { cdLeft: 0, maxCd: 4, activeLeft: 0, kind: null, invuln: 0, solarShield: progress.equippedHero === 'phoenix_festiv' },
+    input: { left: false, right: false },
+    spawnX: 65, spawnY: 260,
+    camX: 0, camY: 0, shake: 0, clock: 0,
+    isWon: false, runCoins: 0, runDiamonds: 0,
+    doorProg: 0, doorOpen: false,
+    finProg: 0, finOpen: false,
+    nearTree: false, nearRet: false, nearSanta: false, nearFin: false,
+    bossToastCd: 0,
+    particles: [], bubbles: [], snowBursts: [], popTexts: [], rings: [],
+    stars: Array.from({ length: 75 }, (_, i) => ({ x: (i * 193) % 2600, y: (i * 79) % 900, r: i % 3 === 0 ? 2.2 : 1.3, ph: i * 0.9, col: i % 4 === 0 ? '#FFE066' : (i % 3 === 0 ? '#D0EBFF' : '#FFF') })),
+    snow: Array.from({ length: 70 }, (_, i) => ({ x: (i * 137) % 1200, y: (i * 83) % 900, r: 1.8 + (i % 4) * 1.1, sy: 0.8 + (i % 5) * 0.38, ph: i * 0.7, a: 0.45 + (i % 4) * 0.14 }))
+  };
+
+  function spawnPop(x, y, text, color) {
+    engine.popTexts.push({ x, y, text, color, life: 1 });
+  }
+  function spawnDust(x, y, color, count = 8) {
+    for (let i = 0; i < count; i++) {
+      engine.particles.push({ x, y, vx: (Math.random() - 0.5) * 5.2, vy: -Math.random() * 4.5 - 1, sz: 3 + Math.random() * 4, col: color, life: 1, decay: 0.035 });
+    }
+  }
+  function spawnJumpEffects(x, y) {
+    for (let i = 0; i < 10; i++) {
+      engine.bubbles.push({
+        x: x + (Math.random() - 0.5) * 26, y: y - 4,
+        vx: (Math.random() - 0.5) * 2.8, vy: -1.1 - Math.random() * 2.2,
+        r: 4 + Math.random() * 6, ph: Math.random() * 6.28,
+        tint: i % 2 === 0 ? '#74C0FC' : '#FFFFFF', life: 1, decay: 0.028
+      });
+    }
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2 + Math.random() * 0.4;
+      const spd = 1.4 + Math.random() * 2.2;
+      engine.snowBursts.push({
+        x, y: y - 6, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 1.2,
+        r: 5 + Math.random() * 3.5, rot: Math.random() * 360, rSpd: (Math.random() - 0.5) * 6,
+        col: i % 2 === 0 ? '#FFFFFF' : '#BAE6FD', life: 1, decay: 0.03
+      });
+    }
+  }
+
+  function loadLevel(lvlNum) {
+    const safe = Math.max(1, Math.min(999999999, Math.floor(lvlNum)));
+    progress.currentLevel = safe;
+    progress.unlockedLevel = Math.max(progress.unlockedLevel, safe);
+    saveProgress();
+
+    engine.lvlData = buildLevel(safe);
+    engine.savedMain = null;
+    engine.spawnX = 65; engine.spawnY = 260;
+    Object.assign(engine.hero, { x: 65, y: 260, vx: 0, vy: 0, grounded: false, jumpsLeft: 2, sx: 1, sy: 1, ridePlat: null });
+    engine.power = { cdLeft: 0, maxCd: findHero(progress.equippedHero).cd || 4, activeLeft: 0, kind: null, invuln: 0, solarShield: progress.equippedHero === 'phoenix_festiv' };
+    engine.isWon = false; engine.runCoins = 0; engine.runDiamonds = 0;
+    engine.doorProg = 0; engine.doorOpen = false;
+    engine.finProg = 0; engine.finOpen = false;
+    engine.particles = []; engine.bubbles = []; engine.snowBursts = []; engine.popTexts = []; engine.rings = [];
+    syncHud();
+  }
+
+  function triggerJump() {
+    const h = engine.hero;
+    h.jumpBuf = 8;
+    const maxJumps = engine.power.kind === 'SLOWMO' ? 3 : 2;
+    if (h.grounded || h.coyote > 0) {
+      h.vy = engine.power.kind === 'AURORA_NOVA' ? h.jumpVel * 1.18 : h.jumpVel;
+      h.grounded = false; h.coyote = 0; h.jumpBuf = 0;
+      h.jumpsLeft = maxJumps - 1;
+      h.sx = 0.76; h.sy = 1.28;
+      spawnJumpEffects(h.x + h.w / 2, h.y + h.h);
+      audio.jump();
+      progress.stats.jumpsMade++;
+      if (engine.lvlData.dim === 'VILLAGE') progress.santaStats.bubbleJumps++;
+      saveProgress();
+    } else if (h.jumpsLeft > 0) {
+      h.vy = h.jumpVel * 0.94;
+      h.jumpsLeft--; h.jumpBuf = 0;
+      h.sx = 0.8; h.sy = 1.22;
+      spawnJumpEffects(h.x + h.w / 2, h.y + h.h);
+      audio.jump();
+      progress.stats.jumpsMade++;
+      if (engine.lvlData.dim === 'VILLAGE') progress.santaStats.bubbleJumps++;
+      saveProgress();
+    }
+  }
+
+  function activateAbility() {
+    const meta = findHero(progress.equippedHero);
+    if (!meta.abType || engine.power.cdLeft > 0) return;
+    engine.power.maxCd = meta.cd;
+    engine.power.cdLeft = meta.cd;
+    engine.power.kind = meta.abType;
+    audio.door();
+
+    if (meta.abType === 'DASH') {
+      engine.hero.vx = engine.hero.dir * 16;
+      engine.hero.vy = -2;
+      engine.power.invuln = 0.9;
+      engine.power.activeLeft = 0.6;
+      spawnDust(engine.hero.x + 19, engine.hero.y + 19, meta.trail, 16);
+    } else if (meta.abType === 'PRESENT_BARRAGE') {
+      engine.power.activeLeft = 2.5;
+      engine.power.invuln = 1.6;
+      engine.lvlData.lasers.forEach(l => { if (Math.abs(l.x - engine.hero.x) < 280) l.broken = true; });
+      engine.lvlData.goblins.forEach(g => { if (g.alive && Math.abs(g.x - engine.hero.x) < 280) { g.alive = false; progress.stats.intrudersKilled++; progress.bonusStats.intrudersKilled++; } });
+      progress.coins += 3; engine.runCoins += 3;
+      spawnPop(engine.hero.x + 19, engine.hero.y - 12, '🎁 +3 🪙!', '#FFE066');
+      saveProgress(); syncHud();
+    } else {
+      engine.power.activeLeft = meta.abType === 'ZEROG' ? 5.0 : 4.5;
+      if (meta.abType === 'AURORA_NOVA' || meta.abType === 'CANDY_TURBO') engine.power.invuln = 2.6;
+    }
+  }
+
+  function enterVillage() {
+    if (engine.lvlData.dim === 'VILLAGE' || engine.doorOpen) return;
+    engine.doorOpen = true;
+    audio.door();
+    showToast('🎄 Se deschide Ușa către Satul lui Moș Crăciun!');
+  }
+
+  function completeEnterVillage() {
+    engine.savedMain = {
+      lvlData: engine.lvlData, x: engine.hero.x, y: engine.hero.y,
+      spawnX: engine.spawnX, spawnY: engine.spawnY, runCoins: engine.runCoins, runDiamonds: engine.runDiamonds
+    };
+    engine.lvlData = buildSantaVillage(progress.currentLevel);
+    engine.spawnX = 118; engine.spawnY = 260;
+    Object.assign(engine.hero, { x: 118, y: 260, vx: 0, vy: 0, grounded: false, ridePlat: null });
+    engine.doorOpen = false; engine.doorProg = 0;
+    showToast('🎅 Bine ai venit în Satul lui Moș Crăciun!');
+  }
+
+  function returnToMain() {
+    if (!engine.savedMain) return;
+    audio.door();
+    const s = engine.savedMain;
+    engine.lvlData = s.lvlData;
+    engine.spawnX = s.spawnX; engine.spawnY = s.spawnY;
+    Object.assign(engine.hero, { x: s.x, y: s.y, vx: 0, vy: 0, grounded: false, ridePlat: null });
+    engine.savedMain = null;
+    showToast('🌲 Te-ai întors la nivelul tău!');
+  }
+
+  function hurtHero() {
+    if (engine.power.invuln > 0 || engine.isWon) return;
+    if (engine.power.solarShield) {
+      engine.power.solarShield = false;
+      engine.power.invuln = 1.6;
+      engine.hero.vy = -10;
+      engine.shake = 10;
+      spawnPop(engine.hero.x + 19, engine.hero.y - 10, '🔥 Scut Salvat!', '#FF922B');
+      audio.stomp();
+      return;
+    }
+    audio.hurt();
+    engine.shake = 14;
+    spawnDust(engine.hero.x + 19, engine.hero.y + 19, '#FA5252', 14);
+    Object.assign(engine.hero, { x: engine.spawnX, y: engine.spawnY, vx: 0, vy: 0, grounded: false, ridePlat: null });
+    engine.power.invuln = 1.0;
+  }
+
+  function aabb(ax, ay, aw, ah, bx, by, bw, bh) {
+    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+  }
+
+  function stepSimulation(viewW, viewH, dt) {
+    const dtScale = Math.min(2.2, dt * 60);
+    engine.clock += dt;
+    if (engine.shake > 0) engine.shake--;
+    if (engine.bossToastCd > 0) engine.bossToastCd -= dt;
+
+    if (engine.power.cdLeft > 0) engine.power.cdLeft = Math.max(0, engine.power.cdLeft - dt);
+    if (engine.power.invuln > 0) engine.power.invuln = Math.max(0, engine.power.invuln - dt);
+    if (engine.power.activeLeft > 0) {
+      engine.power.activeLeft = Math.max(0, engine.power.activeLeft - dt);
+      if (engine.power.activeLeft === 0) engine.power.kind = null;
+    }
+
+    if (engine.doorOpen) {
+      engine.doorProg = Math.min(1, engine.doorProg + dt * 2.2);
+      if (engine.doorProg >= 1) completeEnterVillage();
+    }
+
+    const lvl = engine.lvlData;
+    const h = engine.hero;
+    const slowMult = engine.power.kind === 'SLOWMO' ? 0.4 : (engine.power.kind === 'BLIZZARD' ? 0.15 : 1);
+
+    // Update platforms
+    for (const p of lvl.platforms) {
+      const ox = p.x, oy = p.y;
+      if (p.kind === 'MOVE_H') {
+        p.x = p.baseX + Math.sin(engine.clock * p.speed * slowMult + p.phase) * p.range * 0.5;
+      } else if (p.kind === 'MOVE_V') {
+        p.y = p.baseY + Math.sin(engine.clock * p.speed * slowMult + p.phase) * p.range * 0.5;
+      } else if (p.kind === 'FALL') {
+        if (p.triggered) {
+          p.timer += dtScale;
+          if (p.timer > 22) {
+            p.vy += 0.45 * dtScale;
+            p.y += p.vy * dtScale;
+            if (p.timer > 150) { p.y = p.origY; p.vy = 0; p.timer = 0; p.triggered = false; }
+          }
+        }
+      }
+      p.dx = p.x - ox; p.dy = p.y - oy;
+    }
+
+    if (h.grounded && h.ridePlat) {
+      h.x += h.ridePlat.dx;
+      h.y += h.ridePlat.dy;
+    }
+
+    // Horizontal movement
+    const spdBoost = engine.power.kind === 'CANDY_TURBO' ? 1.55 : (engine.power.kind === 'BLIZZARD' ? 1.35 : 1);
+    const targetVx = ((engine.input.right ? 1 : 0) - (engine.input.left ? 1 : 0)) * h.speed * spdBoost;
+    h.vx += (targetVx - h.vx) * 0.35 * dtScale;
+    if (Math.abs(targetVx) > 0.2) h.dir = targetVx > 0 ? 1 : -1;
+    h.x = Math.max(0, h.x + h.vx * dtScale);
+
+    // Gravity & Vertical
+    const gMult = engine.power.kind === 'ZEROG' ? 0.38 : (engine.power.kind === 'SOLAR' ? 0.45 : 1);
+    h.vy = Math.min(15, h.vy + h.grav * gMult * dtScale);
+    const prevBot = h.y + h.h;
+    h.y += h.vy * dtScale;
+
+    h.grounded = false; h.ridePlat = null;
+    for (const p of lvl.platforms) {
+      if (p.kind === 'FALL' && p.timer > 55) continue;
+      if (h.vy >= 0 && h.x + h.w > p.x + 3 && h.x < p.x + p.w - 3 && prevBot <= p.y + 10 && h.y + h.h >= p.y) {
+        h.y = p.y - h.h;
+        h.vy = 0;
+        h.grounded = true;
+        h.ridePlat = p;
+        h.jumpsLeft = engine.power.kind === 'SLOWMO' ? 3 : 2;
+        if (p.kind === 'FALL') p.triggered = true;
+        break;
+      }
+    }
+    h.coyote = h.grounded ? 6 : Math.max(0, h.coyote - 1);
+    h.sx += (1 - h.sx) * 0.22 * dtScale;
+    h.sy += (1 - h.sy) * 0.22 * dtScale;
+    h.tilt = h.grounded ? (h.vx / h.speed) * 6 : 0;
+    h.bobY = h.grounded && Math.abs(h.vx) > 0.8 ? Math.sin(engine.clock * 14) * 2 : 0;
+
+    if (h.y > lvl.deathY) hurtHero();
+
+    // Bounce Pads
+    for (const bp of lvl.bouncePads) {
+      if (bp.squash > 0) bp.squash--;
+      if (aabb(h.x, h.y, h.w, h.h, bp.x, bp.y - bp.h, bp.w, bp.h)) {
+        h.vy = -17.4; h.grounded = false; bp.squash = 10;
+        h.sx = 0.72; h.sy = 1.34;
+        spawnJumpEffects(bp.x + bp.w / 2, bp.y - bp.h);
+        audio.jump();
+      }
+    }
+
+    // Checkpoints
+    for (const cp of lvl.checkpoints) {
+      if (!cp.activated && Math.abs((h.x + h.w / 2) - cp.x) < 34 && Math.abs((h.y + h.h) - cp.y) < 55) {
+        cp.activated = true;
+        engine.spawnX = cp.x - h.w / 2;
+        engine.spawnY = cp.y - h.h - 4;
+        spawnPop(cp.x, cp.y - 54, '🚩 Checkpoint!', '#51CF66');
+        audio.coin();
+      }
+    }
+
+    // Coins & Magnet
+    const magnet = engine.power.kind === 'ZEROG' || engine.power.kind === 'AURORA_NOVA';
+    for (const c of lvl.coins) {
+      if (c.taken) continue;
+      if (magnet) {
+        const dx = (h.x + h.w / 2) - c.x, dy = (h.y + h.h / 2) - c.y;
+        const d = Math.hypot(dx, dy);
+        if (d < 220 && d > 1) { c.x += (dx / d) * 7 * dtScale; c.y += (dy / d) * 7 * dtScale; }
+      }
+      if (Math.hypot((h.x + h.w / 2) - c.x, (h.y + h.h / 2) - c.y) < 28) {
+        c.taken = true;
+        progress.coins++; progress.passXP += 10;
+        progress.stats.coinsGot++; progress.bonusStats.coinsGot++; progress.santaStats.sleighCoins++;
+        engine.runCoins++;
+        spawnPop(c.x, c.y - 12, '+1 🪙', '#FFE066');
+        audio.coin(); saveProgress(); syncHud();
+      }
+    }
+
+    // Diamonds
+    for (const dm of lvl.diamonds) {
+      if (dm.taken) continue;
+      if (Math.hypot((h.x + h.w / 2) - dm.x, (h.y + h.h / 2) - dm.y) < 30) {
+        dm.taken = true;
+        progress.diamonds++; progress.passXP += 30;
+        engine.runDiamonds++;
+        spawnPop(dm.x, dm.y - 16, '+1 💎', '#74C0FC');
+        audio.diamond(); saveProgress(); syncHud();
+      }
+    }
+
+    // Lasers
+    for (const l of lvl.lasers) {
+      if (l.broken) continue;
+      if (l.axis === 'H') l.x = l.baseX + (Math.sin(engine.clock * l.speed * slowMult + l.phase) * 0.5 + 0.5) * l.range;
+      else l.y = l.baseY - (Math.sin(engine.clock * l.speed * slowMult + l.phase) * 0.5 + 0.5) * l.range;
+      if (aabb(h.x + 6, h.y + 6, h.w - 12, h.h - 10, l.x + 2, l.y - l.h + 4, l.w - 4, l.h - 6)) {
+        if (engine.power.kind === 'CANDY_TURBO' || engine.power.kind === 'DASH') {
+          l.broken = true; spawnDust(l.x, l.y - l.h / 2, '#4DABF7', 10); audio.stomp();
+        } else { hurtHero(); }
+      }
+    }
+
+    // Elf Goblins
+    for (const g of lvl.goblins) {
+      if (!g.alive) continue;
+      g.x += g.vx * slowMult * dtScale;
+      if (g.x < g.minX) { g.x = g.minX; g.vx = Math.abs(g.vx); }
+      if (g.x > g.maxX) { g.x = g.maxX; g.vx = -Math.abs(g.vx); }
+      if (g.kind === 'FLYER') g.y = g.baseY - 14 + Math.sin(engine.clock * 4 + g.phase) * 14;
+      else if (g.kind === 'BOUNCY') g.y = g.baseY - Math.abs(Math.sin(engine.clock * 4.5 + g.phase)) * 22;
+
+      if (aabb(h.x + 4, h.y + 4, h.w - 8, h.h - 6, g.x + 2, g.y + 2, g.w - 4, g.h - 4)) {
+        if (h.vy > 0 && (h.y + h.h) < (g.y + g.h * 0.65) || engine.power.kind === 'CANDY_TURBO') {
+          g.alive = false;
+          h.vy = -10.5; h.jumpsLeft = 1;
+          progress.coins += 2; progress.stats.intrudersKilled++; progress.bonusStats.intrudersKilled++;
+          engine.runCoins += 2;
+          spawnDust(g.x + g.w / 2, g.y + g.h / 2, '#51CF66', 12);
+          spawnPop(g.x + g.w / 2, g.y - 10, '+2 🪙', '#69DB7C');
+          audio.stomp(); saveProgress(); syncHud();
+        } else { hurtHero(); }
+      }
+    }
+
+    // Boss (L10 & L20)
+    const b = lvl.boss;
+    if (b && b.alive) {
+      if (b.flash > 0) b.flash -= dt;
+      if (b.hurtCd > 0) b.hurtCd -= dt;
+      b.x += b.vx * slowMult * dtScale;
+      if (b.x < b.minX) { b.x = b.minX; b.vx = Math.abs(b.vx); }
+      if (b.x > b.maxX) { b.x = b.maxX; b.vx = -Math.abs(b.vx); }
+      b.jumpCd -= dt * slowMult;
+      if (b.jumpCd <= 0 && b.y >= b.baseY - 1) { b.vy = -9.5; b.jumpCd = 2.0; }
+      b.vy += 0.45 * slowMult * dtScale;
+      b.y += b.vy * dtScale;
+      if (b.y > b.baseY) { b.y = b.baseY; b.vy = 0; }
+
+      if (aabb(h.x + 4, h.y + 4, h.w - 8, h.h - 6, b.x + 4, b.y + 4, b.w - 8, b.h - 6)) {
+        if (h.vy > 0 && (h.y + h.h) < (b.y + b.h * 0.55) && b.hurtCd <= 0) {
+          b.hp = Math.max(0, b.hp - b.dmg);
+          b.flash = 0.18; b.hurtCd = 0.25;
+          h.vy = -12.5; h.jumpsLeft = 2;
+          engine.shake = 9; audio.stomp();
+          spawnPop(b.x + b.w / 2, b.y - 12, `-${b.dmg} HP!`, '#FFE066');
+          if (b.hp <= 0) {
+            b.alive = false;
+            progress.coins += 60; progress.diamonds += 3;
+            progress.stats.intrudersKilled++; progress.bonusStats.intrudersKilled++;
+            spawnDust(b.x + b.w / 2, b.y + b.h / 2, '#82C91E', 24);
+            showToast(`👑 Ai învins ${b.name}! Ușa de Finish s-a deblocat!`);
+            audio.win(); saveProgress();
+          }
+          syncBossHud();
+        } else if (b.hurtCd <= 0) { hurtHero(); }
+      }
+    }
+
+    // Village houses & gifts
+    if (lvl.dim === 'VILLAGE') {
+      for (const hs of lvl.houses) {
+        if (!hs.lit && h.x + h.w > hs.x && h.x < hs.x + hs.w && Math.abs((h.y + h.h) - hs.y) < 110) {
+          hs.lit = true;
+          progress.santaStats.housesVisited++;
+          spawnPop(hs.x + hs.w / 2, hs.y - hs.h - 14, '🏠 Lumină Aprinsă!', '#FFE066');
+          audio.coin(); saveProgress();
+        }
+      }
+      for (const gb of lvl.gifts) {
+        if (!gb.taken && Math.hypot((h.x + h.w / 2) - gb.x, (h.y + h.h / 2) - gb.y) < 32) {
+          gb.taken = true;
+          progress.coins += 3; engine.runCoins += 3;
+          progress.santaStats.giftsDelivered++; progress.santaStats.sleighCoins += 3;
+          spawnPop(gb.x, gb.y - 14, '🎁 +3 🪙!', '#69DB7C');
+          audio.coin(); saveProgress(); syncHud();
+        }
+      }
+    }
+
+    // Proximity prompts
+    if (lvl.dim === 'MAIN') {
+      engine.nearTree = lvl.startTree.hasDoor && Math.abs((h.x + h.w / 2) - lvl.startTree.x) < 58 && Math.abs((h.y + h.h) - lvl.startTree.y) < 90;
+      engine.nearRet = false; engine.nearSanta = false;
+    } else {
+      engine.nearTree = false;
+      engine.nearRet = lvl.returnDoor && Math.abs((h.x + h.w / 2) - lvl.returnDoor.x) < 58;
+      engine.nearSanta = lvl.sleigh && Math.abs((h.x + h.w / 2) - (lvl.sleigh.x + 25)) < 115;
+    }
+    updatePromptUI();
+
+    // Finish Door
+    if (lvl.dim === 'MAIN' && !engine.isWon) {
+      const g = lvl.goal;
+      engine.nearFin = Math.abs((h.x + h.w / 2) - g.x) < 90;
+      if (Math.abs((h.x + h.w / 2) - g.x) < 36 && Math.abs((h.y + h.h) - g.y) < 82) {
+        if (lvl.boss && lvl.boss.alive) {
+          if (engine.bossToastCd <= 0) {
+            engine.bossToastCd = 2.5;
+            showToast(`🔒 Învinge-l mai întâi pe ${lvl.boss.name}!`);
+          }
+        } else {
+          engine.finOpen = true;
+        }
+      }
+      if (engine.finOpen) {
+        engine.finProg = Math.min(1, engine.finProg + dt * 2.8);
+        if (engine.finProg >= 1 && !engine.isWon) {
+          engine.isWon = true;
+          const bonusC = 10 + Math.min(15, Math.floor(lvl.lvl * 0.5));
+          const bonusXP = 70 + Math.min(90, lvl.lvl * 2);
+          progress.coins += bonusC; progress.passXP += bonusXP;
+          if (!progress.completedLevels.includes(lvl.lvl)) progress.completedLevels.push(lvl.lvl);
+          progress.unlockedLevel = Math.max(progress.unlockedLevel, lvl.lvl + 1);
+          progress.stats.levelsDone++; progress.bonusStats.levelsDone++;
+          saveProgress(); syncHud(); audio.win();
+          openVictoryModal(lvl.lvl, engine.runCoins + bonusC, bonusXP, engine.runDiamonds);
+        }
+      }
+    }
+
+    // Particles
+    for (let i = engine.particles.length - 1; i >= 0; i--) {
+      const pt = engine.particles[i]; pt.x += pt.vx * dtScale; pt.y += pt.vy * dtScale; pt.vy += 0.14 * dtScale; pt.life -= pt.decay * dtScale;
+      if (pt.life <= 0) engine.particles.splice(i, 1);
+    }
+    for (let i = engine.bubbles.length - 1; i >= 0; i--) {
+      const b0 = engine.bubbles[i]; b0.x += b0.vx * dtScale; b0.y += b0.vy * dtScale; b0.life -= b0.decay * dtScale;
+      if (b0.life <= 0) engine.bubbles.splice(i, 1);
+    }
+    for (let i = engine.snowBursts.length - 1; i >= 0; i--) {
+      const s = engine.snowBursts[i]; s.x += s.vx * dtScale; s.y += s.vy * dtScale; s.rot += s.rSpd * dtScale; s.life -= s.decay * dtScale;
+      if (s.life <= 0) engine.snowBursts.splice(i, 1);
+    }
+    for (let i = engine.popTexts.length - 1; i >= 0; i--) {
+      const p0 = engine.popTexts[i]; p0.y -= 0.75 * dtScale; p0.life -= 0.022 * dtScale;
+      if (p0.life <= 0) engine.popTexts.splice(i, 1);
+    }
+    for (const sf of engine.snow) {
+      sf.y += sf.sy * dtScale;
+      sf.x += Math.sin(engine.clock * 1.4 + sf.ph) * 0.45 * dtScale;
+      if (sf.y > viewH + 10) { sf.y = -8; sf.x = Math.random() * viewW; }
+    }
+
+    const targetCamX = Math.max(0, h.x - viewW * 0.36);
+    const targetCamY = Math.max(-180, Math.min(80, h.y - viewH * 0.56));
+    engine.camX += (targetCamX - engine.camX) * 0.14 * dtScale;
+    engine.camY += (targetCamY - engine.camY) * 0.12 * dtScale;
+  }
+
+  /* Hero Renderer (matches Kotlin HeroRenderer.kt!) */
+  function drawHeroVector(ctx, heroId, x, y, w, h, dir, t, vy = 0, isPreview = false) {
+    const cx = x + w / 2, cy = y + h / 2;
+    const hw = w / 2 - 2, hh = h / 2 - 2;
+    const lookX = isPreview ? Math.sin(t * 1.8) * 2.2 : dir * 2.2;
+    const eyeY = Math.max(-2.5, Math.min(2.5, vy * 0.22));
+    const blink = Math.sin(t * 2.3) > 0.96;
+    const meta = findHero(heroId);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Aura
+    const r = Math.max(w, h) * 0.72;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * (1 + Math.sin(t * 4) * 0.05), 0, Math.PI * 2);
+    ctx.fillStyle = meta.trail + '2E';
+    ctx.fill();
+
+    if (heroId === 'om_de_zapada') {
+      // Polar orbiting crystals
+      for (let i = 0; i < 4; i++) {
+        const a = t * 2.4 + i * Math.PI / 2;
+        const ox = Math.cos(a) * r * 0.95, oy = Math.sin(a) * r * 0.85;
+        ctx.fillStyle = '#E7F5FF';
+        ctx.beginPath(); ctx.arc(ox, oy, 2.3, 0, Math.PI * 2); ctx.fill();
+      }
+      // Fluttering scarf tail
+      const td = dir >= 0 ? -1 : 1;
+      const fl = Math.sin(t * 7.5) * 3;
+      ctx.beginPath();
+      ctx.moveTo(td * (hw - 3), hh - 5.5);
+      ctx.quadraticCurveTo(td * (hw + 7), hh - 4 + fl * 0.5, td * (hw + 12), hh + 1 + fl);
+      ctx.lineTo(td * (hw + 9), hh + 5.5 + fl);
+      ctx.quadraticCurveTo(td * (hw + 3), hh + 1, td * (hw - 4), hh - 1.5);
+      ctx.closePath();
+      ctx.fillStyle = '#E03131'; ctx.fill();
+      ctx.lineWidth = 1.8; ctx.strokeStyle = INK; ctx.stroke();
+
+      // Top hat
+      ctx.fillStyle = '#1E293B'; ctx.fillRect(-hw * 0.65, -hh - 9, hw * 1.3, 9);
+      ctx.lineWidth = 2; ctx.strokeRect(-hw * 0.65, -hh - 9, hw * 1.3, 9);
+      ctx.fillStyle = '#FA5252'; ctx.fillRect(-hw * 0.65, -hh - 3, hw * 1.3, 3);
+      ctx.fillStyle = '#FCC419'; ctx.fillRect(-2.5, -hh - 3.5, 5, 3.8);
+      ctx.fillStyle = INK; ctx.fillRect(-hw * 0.9, -hh - 1, hw * 1.8, 3.5);
+
+      // Snow body sphere
+      const gr = ctx.createRadialGradient(-4, -4, 2, 0, 0, hw + 2);
+      gr.addColorStop(0, '#FFFFFF'); gr.addColorStop(0.6, '#E7F5FF'); gr.addColorStop(1, '#BAE6FD');
+      ctx.beginPath(); ctx.arc(0, 0, hw + 1, 0, Math.PI * 2);
+      ctx.fillStyle = gr; ctx.fill();
+      ctx.lineWidth = 2.8; ctx.strokeStyle = INK; ctx.stroke();
+
+      // Cheeks & scarf collar
+      ctx.fillStyle = 'rgba(255,135,135,0.55)';
+      ctx.beginPath(); ctx.arc(-8 + lookX * 0.4, 4 + eyeY, 2.7, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(8 + lookX * 0.4, 4 + eyeY, 2.7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#FA5252';
+      ctx.beginPath(); ctx.roundRect(-hw + 1, hh - 7, (hw - 1) * 2, 5.5, 3); ctx.fill();
+      ctx.lineWidth = 1.6; ctx.stroke();
+
+      // Eyes & Carrot nose
+      drawEyes(ctx, lookX, -2 + eyeY, blink);
+      ctx.beginPath();
+      ctx.moveTo(lookX, 1 + eyeY);
+      ctx.lineTo(lookX + (dir >= 0 ? 8.5 : -8.5), 3 + eyeY);
+      ctx.lineTo(lookX, 5 + eyeY);
+      ctx.closePath();
+      ctx.fillStyle = '#FF922B'; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = INK; ctx.stroke();
+    } else if (heroId === 'bradut_vesel') {
+      ctx.beginPath(); ctx.moveTo(0, -hh - 4); ctx.lineTo(hw + 3, hh); ctx.lineTo(-hw - 3, hh); ctx.closePath();
+      ctx.fillStyle = '#2FB344'; ctx.fill(); ctx.lineWidth = 2.8; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.fillStyle = Math.sin(t * 6) > 0 ? '#FA5252' : '#FCC419';
+      ctx.beginPath(); ctx.arc(-6, hh - 6, 2.8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = Math.sin(t * 6) > 0 ? '#4DABF7' : '#FA5252';
+      ctx.beginPath(); ctx.arc(6, hh - 6, 2.8, 0, Math.PI * 2); ctx.fill();
+      drawEyes(ctx, lookX * 0.7, 2 + eyeY, blink);
+    } else if (heroId === 'steaua_craciunului') {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 === 0 ? hw + 4 : (hw + 4) * 0.46;
+        const a = -Math.PI / 2 + i * (Math.PI / 5);
+        if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+        else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#FFD43B'; ctx.fill(); ctx.lineWidth = 2.6; ctx.strokeStyle = INK; ctx.stroke();
+      drawEyes(ctx, lookX * 0.6, eyeY, blink);
+    } else {
+      // Stylized character body with distinct festive hats/colors for all other heroes
+      const bodyColors = {
+        turta_dulce: '#C06C2B', cadou_magic: '#E03131', renul_rudolf: '#A4632A',
+        spiridus_jucaus: '#51CF66', acadea_ninja: '#F8FCFF', pinguin_polar: '#1E293B',
+        clopotel_magic: '#FFD43B', vrajitoarea_ghetii: '#74C0FC', urs_polar_festiv: '#F8FCFF',
+        regele_ghetii: '#3BC9DB', dragon_de_gheata: '#22B8CF', vulpea_polara: '#F8FCFF',
+        spargatorul_de_nuci: '#E03131', mos_craciun_turbo: '#E03131', jack_frost_divin: '#4DABF7',
+        aurora_boreala_divin: '#38D9A9', ingerul_zapezii: '#FFFFFF', craciunita_stelara: '#F06595',
+        mos_nicolae_astral: '#FFD43B', phoenix_festiv: '#FF6B6B', spiritul_craciunului: '#51CF66'
+      };
+      const col = bodyColors[heroId] || meta.trail;
+      ctx.beginPath(); ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 10);
+      ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 2.8; ctx.strokeStyle = INK; ctx.stroke();
+
+      if (heroId === 'cadou_magic') {
+        ctx.fillStyle = '#FCC419'; ctx.fillRect(-3, -hh, 6, hh * 2); ctx.fillRect(-hw, -3, hw * 2, 6);
+        ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+      } else if (heroId === 'mos_craciun_turbo' || heroId === 'craciunita_stelara' || heroId === 'urs_polar_festiv') {
+        ctx.beginPath(); ctx.moveTo(-hw, -hh + 2); ctx.lineTo(0, -hh - 10); ctx.lineTo(hw, -hh + 2); ctx.closePath();
+        ctx.fillStyle = '#E03131'; ctx.fill(); ctx.lineWidth = 2.2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, -hh - 10, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+      } else if (heroId === 'renul_rudolf') {
+        ctx.strokeStyle = '#7C4D00'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-6, -hh); ctx.lineTo(-11, -hh - 9); ctx.moveTo(6, -hh); ctx.lineTo(11, -hh - 9); ctx.stroke();
+      } else if (heroId === 'regele_ghetii' || heroId === 'jack_frost_divin') {
+        ctx.beginPath(); ctx.moveTo(-9, -hh); ctx.lineTo(-5, -hh - 8); ctx.lineTo(0, -hh - 3); ctx.lineTo(5, -hh - 8); ctx.lineTo(9, -hh); ctx.closePath();
+        ctx.fillStyle = '#74C0FC'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+      }
+
+      drawEyes(ctx, lookX, -1 + eyeY, blink);
+      if (heroId === 'renul_rudolf') {
+        ctx.beginPath(); ctx.arc(lookX * 1.1, 5 + eyeY, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#FF2A2A'; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = INK; ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawEyes(ctx, lx, y, blink) {
+    ctx.fillStyle = INK;
+    if (blink) {
+      ctx.fillRect(-7 + lx, y, 4, 1.8);
+      ctx.fillRect(3 + lx, y, 4, 1.8);
+    } else {
+      ctx.beginPath(); ctx.arc(-5 + lx, y, 2.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(5 + lx, y, 2.3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-5.6 + lx, y - 0.8, 0.8, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(4.4 + lx, y - 0.8, 0.8, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  /* World Rendering */
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function renderWorld() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+    }
+
+    const worldScale = h < 440 ? dpr * Math.max(0.74, h / 480) : dpr;
+    const viewW = canvas.width / worldScale;
+    const viewH = canvas.height / worldScale;
+    const lvl = engine.lvlData;
+    const isVil = lvl.dim === 'VILLAGE';
+    const clk = engine.clock;
+
+    ctx.save();
+    ctx.scale(worldScale, worldScale);
+
+    // Night Sky
+    const sky = ctx.createLinearGradient(0, 0, 0, viewH);
+    if (isVil) { sky.addColorStop(0, '#061529'); sky.addColorStop(0.5, '#0E2C47'); sky.addColorStop(1, '#1A435E'); }
+    else { sky.addColorStop(0, '#071426'); sky.addColorStop(0.5, '#0E223D'); sky.addColorStop(1, '#173659'); }
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    // Aurora glow
+    const aur1 = ctx.createRadialGradient(viewW * 0.3, viewH * 0.22, 10, viewW * 0.3, viewH * 0.22, viewW * 0.55);
+    aur1.addColorStop(0, isVil ? 'rgba(64,192,87,0.28)' : 'rgba(47,179,68,0.22)'); aur1.addColorStop(1, 'transparent');
+    ctx.fillStyle = aur1; ctx.fillRect(0, 0, viewW, viewH);
+
+    // Moon
+    ctx.beginPath(); ctx.arc(viewW * 0.82, viewH * 0.16, 28, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFF9DB'; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,224,102,0.6)'; ctx.stroke();
+
+    // Parallax Stars
+    for (const st of engine.stars) {
+      const sx = ((st.x - engine.camX * 0.12) % viewW + viewW) % viewW;
+      const sy = st.y % (viewH * 0.65);
+      ctx.globalAlpha = 0.55 + Math.sin(clk * 2.5 + st.ph) * 0.4;
+      ctx.fillStyle = st.col;
+      ctx.beginPath(); ctx.arc(sx, sy, st.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Camera transform
+    ctx.save();
+    const sxOff = engine.shake > 0 ? (Math.random() - 0.5) * 7 : 0;
+    const syOff = engine.shake > 0 ? (Math.random() - 0.5) * 7 : 0;
+    ctx.translate(-Math.round(engine.camX) + sxOff, -Math.round(engine.camY) + syOff);
+
+    // Tree or Village Houses
+    if (!isVil) {
+      drawGiantTree(lvl.startTree, clk, engine.doorProg, engine.nearTree);
+    } else {
+      if (lvl.returnDoor) drawReturnDoor(lvl.returnDoor, clk, engine.nearRet);
+      for (const hs of lvl.houses) drawVillageHouse(hs, clk);
+      if (lvl.sleigh) drawSantaSleigh(lvl.sleigh, clk, engine.nearSanta);
+    }
+
+    // Beacons
+    for (const b of lvl.beacons) {
+      ctx.fillStyle = '#5C3A21'; ctx.fillRect(b.x - 4, b.y - 38, 8, 38);
+      ctx.lineWidth = 2.2; ctx.strokeStyle = INK; ctx.strokeRect(b.x - 4, b.y - 38, 8, 38);
+      const r = 7 + Math.sin(clk * 5 + b.x * 0.05) * 1.6;
+      ctx.beginPath(); ctx.arc(b.x, b.y - 42, r, 0, Math.PI * 2);
+      ctx.fillStyle = b.color; ctx.fill(); ctx.stroke();
+    }
+
+    // Earthy snow platforms
+    for (const p of lvl.platforms) {
+      if (p.kind === 'FALL' && p.timer > 55) continue;
+      ctx.fillStyle = p.kind === 'FALL' ? '#7C2D12' : '#5C3A21';
+      ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 8); ctx.fill();
+      ctx.fillStyle = p.kind === 'MOVE_H' || p.kind === 'MOVE_V' ? '#BAE6FD' : '#F8FCFF';
+      ctx.beginPath(); ctx.roundRect(p.x - 1, p.y - 2, p.w + 2, 13, 6); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = INK;
+      ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 8); ctx.stroke();
+    }
+
+    // Checkpoints
+    for (const cp of lvl.checkpoints) {
+      ctx.fillStyle = '#E2E8F0'; ctx.fillRect(cp.x - 3, cp.y - 44, 6, 44);
+      ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.strokeRect(cp.x - 3, cp.y - 44, 6, 44);
+      ctx.beginPath(); ctx.arc(cp.x, cp.y - 46, 9, 0, Math.PI * 2);
+      ctx.fillStyle = cp.activated ? '#51CF66' : '#FA5252'; ctx.fill(); ctx.stroke();
+    }
+
+    // Moving Neon Lasers
+    for (const l of lvl.lasers) {
+      if (l.broken) continue;
+      ctx.fillStyle = 'rgba(250, 82, 82, 0.35)';
+      ctx.fillRect(l.x - 3, l.y - l.h, l.w + 6, l.h);
+      ctx.fillStyle = '#FF4D6D';
+      ctx.fillRect(l.x + 2, l.y - l.h + 4, l.w - 4, l.h - 8);
+      ctx.fillStyle = '#FFE066';
+      ctx.fillRect(l.x + 5, l.y - l.h + 6, l.w - 10, l.h - 12);
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(l.x - 2, l.y - 8, l.w + 4, 8);
+      ctx.lineWidth = 2; ctx.strokeStyle = INK;
+      ctx.strokeRect(l.x - 2, l.y - 8, l.w + 4, 8);
+    }
+
+    // Elf Goblins
+    for (const g of lvl.goblins) {
+      if (!g.alive) continue;
+      ctx.save();
+      ctx.translate(g.x + g.w / 2, g.y + g.h / 2);
+      // Pointy green elf hat
+      ctx.beginPath(); ctx.moveTo(-14, -10); ctx.lineTo(0, -26); ctx.lineTo(14, -10); ctx.closePath();
+      ctx.fillStyle = '#2FB344'; ctx.fill(); ctx.lineWidth = 2.4; ctx.strokeStyle = INK; ctx.stroke();
+      // Goblin head/body
+      ctx.beginPath(); ctx.roundRect(-15, -12, 30, 28, 8);
+      ctx.fillStyle = g.kind === 'FLYER' ? '#74C0FC' : '#51CF66'; ctx.fill(); ctx.stroke();
+      // Angry eyes
+      ctx.fillStyle = '#FFF'; ctx.fillRect(-9, -6, 6, 5); ctx.fillRect(3, -6, 6, 5);
+      ctx.fillStyle = '#FA5252'; ctx.fillRect(-7, -5, 3, 3); ctx.fillRect(5, -5, 3, 3);
+      ctx.restore();
+    }
+
+    // Boss
+    if (lvl.boss && lvl.boss.alive) {
+      const b = lvl.boss;
+      ctx.save();
+      ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+      ctx.beginPath(); ctx.roundRect(-b.w / 2, -b.h / 2, b.w, b.h, 14);
+      ctx.fillStyle = b.flash > 0 ? '#FFFFFF' : (b.kind === 'ELF10' ? '#2B8A3E' : '#5C940D');
+      ctx.fill(); ctx.lineWidth = 3.5; ctx.strokeStyle = INK; ctx.stroke();
+      // Santa/Boss crown hat
+      ctx.beginPath(); ctx.moveTo(-24, -b.h / 2 + 4); ctx.lineTo(0, -b.h / 2 - 22); ctx.lineTo(24, -b.h / 2 + 4); ctx.closePath();
+      ctx.fillStyle = '#E03131'; ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#FFE066'; ctx.beginPath(); ctx.arc(-14, -10, 6, 0, Math.PI * 2); ctx.arc(14, -10, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(-14, -10, 2.5, 0, Math.PI * 2); ctx.arc(14, -10, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // Bounce Pads
+    for (const bp of lvl.bouncePads) {
+      const sq = bp.squash > 0 ? 5 : 0;
+      ctx.fillStyle = '#FCC419';
+      ctx.beginPath(); ctx.roundRect(bp.x, bp.y - bp.h + sq, bp.w, bp.h - sq, 6); ctx.fill();
+      ctx.lineWidth = 2.8; ctx.strokeStyle = INK; ctx.stroke();
+    }
+
+    // Gift boxes
+    for (const gb of lvl.gifts) {
+      if (gb.taken) continue;
+      const bob = Math.sin(clk * 4.5 + gb.x * 0.05) * 3;
+      ctx.fillStyle = gb.c; ctx.fillRect(gb.x - 12, gb.y - 22 + bob, 24, 22);
+      ctx.fillStyle = gb.r; ctx.fillRect(gb.x - 3, gb.y - 22 + bob, 6, 22); ctx.fillRect(gb.x - 12, gb.y - 14 + bob, 24, 5);
+      ctx.lineWidth = 2.2; ctx.strokeStyle = INK; ctx.strokeRect(gb.x - 12, gb.y - 22 + bob, 24, 22);
+    }
+
+    // Coins
+    for (const c of lvl.coins) {
+      if (c.taken) continue;
+      const bob = Math.sin(clk * 5 + c.x * 0.05) * 4;
+      ctx.beginPath(); ctx.arc(c.x, c.y + bob, 12, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFD43B'; ctx.fill(); ctx.lineWidth = 2.6; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.fillStyle = '#E67700'; ctx.font = '900 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('1', c.x, c.y + bob + 0.5);
+    }
+
+    // Diamonds
+    for (const dm of lvl.diamonds) {
+      if (dm.taken) continue;
+      const bob = Math.sin(clk * 4.5 + dm.x * 0.05) * 5, cy = dm.y + bob;
+      ctx.beginPath(); ctx.moveTo(dm.x, cy - 14); ctx.lineTo(dm.x + 13, cy - 3); ctx.lineTo(dm.x, cy + 14); ctx.lineTo(dm.x - 13, cy - 3); ctx.closePath();
+      ctx.fillStyle = '#4DABF7'; ctx.fill(); ctx.lineWidth = 2.6; ctx.strokeStyle = INK; ctx.stroke();
+    }
+
+    // Finish Door
+    if (!isVil) drawFinishDoor(lvl.goal, clk, engine.finProg, !!(lvl.boss && lvl.boss.alive));
+
+    // Jump Bubbles & Snow Crystals
+    for (const b0 of engine.bubbles) {
+      ctx.globalAlpha = Math.max(0, b0.life);
+      ctx.beginPath(); ctx.arc(b0.x, b0.y, b0.r, 0, Math.PI * 2);
+      ctx.fillStyle = b0.tint + '55'; ctx.fill();
+      ctx.lineWidth = 1.8; ctx.strokeStyle = '#FFFFFF'; ctx.stroke();
+    }
+    for (const js of engine.snowBursts) {
+      ctx.globalAlpha = Math.max(0, js.life);
+      ctx.strokeStyle = js.col; ctx.lineWidth = 2;
+      for (let arm = 0; arm < 3; arm++) {
+        const a = (js.rot + arm * 60) * Math.PI / 180;
+        const dx = Math.cos(a) * js.r, dy = Math.sin(a) * js.r;
+        ctx.beginPath(); ctx.moveTo(js.x - dx, js.y - dy); ctx.lineTo(js.x + dx, js.y + dy); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Hero
+    const hero = engine.hero;
+    ctx.save();
+    ctx.translate(hero.x + hero.w / 2, hero.y + hero.h + hero.bobY);
+    ctx.scale(hero.sx, hero.sy);
+    ctx.rotate(hero.tilt * Math.PI / 180);
+    if (engine.power.invuln > 0 && Math.floor(clk * 20) % 2 === 0) ctx.globalAlpha = 0.55;
+    drawHeroVector(ctx, progress.equippedHero, -hero.w / 2, -hero.h, hero.w, hero.h, hero.dir, clk, hero.vy, false);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // Dust & Popups
+    for (const pt of engine.particles) {
+      ctx.globalAlpha = Math.max(0, pt.life);
+      ctx.fillStyle = pt.col; ctx.fillRect(pt.x - pt.sz / 2, pt.y - pt.sz / 2, pt.sz, pt.sz);
+    }
+    for (const p0 of engine.popTexts) {
+      ctx.globalAlpha = Math.max(0, p0.life);
+      ctx.font = '900 14px Nunito, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = INK; ctx.fillText(p0.text, p0.x + 1.5, p0.y + 1.5);
+      ctx.fillStyle = p0.color; ctx.fillText(p0.text, p0.x, p0.y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Foreground Snowfall
+    for (const sf of engine.snow) {
+      ctx.globalAlpha = sf.a;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(sf.x % viewW, sf.y % viewH, sf.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawGiantTree(tree, clk, openProg, near) {
+    const sway = Math.sin(clk * 1.8) * 4;
+    ctx.save();
+    ctx.translate(tree.x, tree.y);
+    // Green splash glow behind tree
+    const spl = ctx.createRadialGradient(0, -110, 12, 0, -110, 130);
+    spl.addColorStop(0, 'rgba(81,207,102,0.34)'); spl.addColorStop(1, 'transparent');
+    ctx.fillStyle = spl; ctx.beginPath(); ctx.arc(0, -110, 130, 0, Math.PI * 2); ctx.fill();
+
+    // Trunk
+    ctx.fillStyle = '#5C3A21'; ctx.fillRect(-16, -42, 32, 42);
+    ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(-16, -42, 32, 42);
+
+    // 4 swaying pine tiers
+    const tiers = [[-86, -34, -115], [-70, -82, -162], [-54, -128, -206], [-36, -172, -248]];
+    tiers.forEach(([hw, baseY, topY], idx) => {
+      const sw = sway * (idx + 1) * 0.28;
+      ctx.beginPath(); ctx.moveTo(-hw + sw * 0.4, baseY); ctx.lineTo(sw, topY); ctx.lineTo(hw + sw * 0.4, baseY); ctx.closePath();
+      ctx.fillStyle = idx % 2 === 0 ? '#1B7A37' : '#2FB344'; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+    });
+
+    // Top star
+    ctx.beginPath(); ctx.arc(sway * 1.1, -254, 11, 0, Math.PI * 2);
+    ctx.fillStyle = '#FCC419'; ctx.fill(); ctx.stroke();
+
+    // Door to Santa's Village
+    ctx.fillStyle = openProg > 0.1 || near ? '#51CF66' : '#854D0E';
+    ctx.beginPath(); ctx.roundRect(-21, -64, 42, 64, [20, 20, 0, 0]); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.fillStyle = '#FFE066'; ctx.beginPath(); ctx.arc(11, -30, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.font = '900 11px Nunito, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#FFFFFF'; ctx.fillText('🎄 SATUL LUI MOȘ', 0, -74);
+    ctx.restore();
+  }
+
+  function drawReturnDoor(rd, clk, near) {
+    ctx.save(); ctx.translate(rd.x, rd.y);
+    ctx.fillStyle = near ? '#4DABF7' : '#1E40AF';
+    ctx.beginPath(); ctx.roundRect(-22, -68, 44, 68, [22, 22, 0, 0]); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = '900 11px Nunito, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🌲 ÎNAPOI LA NIVEL', 0, -78);
+    ctx.restore();
+  }
+
+  function drawVillageHouse(hs, clk) {
+    ctx.save(); ctx.translate(hs.x, hs.y);
+    ctx.fillStyle = hs.wall; ctx.fillRect(0, -hs.h, hs.w, hs.h);
+    ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.strokeRect(0, -hs.h, hs.w, hs.h);
+    ctx.beginPath(); ctx.moveTo(-10, -hs.h); ctx.lineTo(hs.w / 2, -hs.h - 42); ctx.lineTo(hs.w + 10, -hs.h); ctx.closePath();
+    ctx.fillStyle = hs.roof; ctx.fill(); ctx.stroke();
+    // Lit windows
+    ctx.fillStyle = hs.lit ? '#FFE066' : '#334155';
+    ctx.fillRect(18, -hs.h + 26, 26, 26); ctx.strokeRect(18, -hs.h + 26, 26, 26);
+    ctx.fillRect(hs.w - 44, -hs.h + 26, 26, 26); ctx.strokeRect(hs.w - 44, -hs.h + 26, 26, 26);
+    ctx.restore();
+  }
+
+  function drawSantaSleigh(sl, clk, near) {
+    ctx.save(); ctx.translate(sl.x, sl.y);
+    ctx.fillStyle = '#C92A2A';
+    ctx.beginPath(); ctx.roundRect(-45, -42, 95, 36, 12); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.strokeStyle = '#FCC419'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-55, -2); ctx.lineTo(65, -2); ctx.stroke();
+    // Santa icon above sleigh
+    ctx.beginPath(); ctx.arc(0, -56, 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFE0BD'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.fillStyle = '#E03131';
+    ctx.beginPath(); ctx.moveTo(-16, -62); ctx.lineTo(0, -84); ctx.lineTo(16, -62); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFE066'; ctx.font = '900 12px Nunito, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🎅 MOȘ CRĂCIUN (QUESTURI)', 0, -96);
+    ctx.restore();
+  }
+
+  function drawFinishDoor(door, clk, openProg, locked) {
+    ctx.save(); ctx.translate(door.x, door.y);
+    ctx.fillStyle = locked ? '#475569' : '#2FB344';
+    ctx.beginPath(); ctx.roundRect(-26, -82, 52, 82, [26, 26, 0, 0]); ctx.fill();
+    ctx.lineWidth = 3.2; ctx.strokeStyle = INK; ctx.stroke();
+    if (!locked) {
+      ctx.fillStyle = '#FFE066';
+      ctx.beginPath(); ctx.roundRect(-20 + openProg * 14, -74, Math.max(4, 40 - openProg * 28), 72, [20, 20, 0, 0]); ctx.fill();
+    }
+    ctx.fillStyle = '#FFFFFF'; ctx.font = '900 12px Nunito, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(locked ? '🔒 ÎNVINGE BOSS-UL' : '✨ FINISH', 0, -92);
+    ctx.restore();
+  }
+
+  /* UI & Modals */
+  const hudHeroC = document.getElementById('hudHeroCanvas');
+  const entHeroC = document.getElementById('entranceHeroCanvas');
+
+  function syncHud() {
+    document.getElementById('hudLevelText').textContent = `Nivel ${progress.currentLevel} / ????`;
+    document.getElementById('hudCoins').textContent = fmtNum(progress.coins);
+    document.getElementById('hudDiamonds').textContent = fmtNum(progress.diamonds);
+    const hMeta = findHero(progress.equippedHero);
+    document.getElementById('entMetaTag').textContent = `Nivel ${progress.currentLevel} • ${hMeta.name}`;
+    document.getElementById('entCoinsTag').textContent = fmtNum(progress.coins);
+
+    const abBtn = document.getElementById('btnAbility');
+    if (hMeta.abType) {
+      abBtn.style.display = 'inline-flex';
+      document.getElementById('abIcon').textContent = hMeta.abIcon;
+    } else {
+      abBtn.style.display = 'none';
+    }
+    syncBossHud();
+  }
+
+  function syncBossHud() {
+    const b = engine.lvlData.boss;
+    const bar = document.getElementById('bossBar');
+    if (engine.lvlData.dim === 'MAIN' && b && b.alive) {
+      bar.style.display = 'flex';
+      document.getElementById('bossTitle').textContent = `👑 ${b.name} • ${fmtNum(b.hp)} / ${fmtNum(b.maxHp)} HP (Sari pe cap!)`;
+      document.getElementById('bossFill').style.width = `${(b.hp / b.maxHp) * 100}%`;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  function syncAbilityAndBadges() {
+    const hMeta = findHero(progress.equippedHero);
+    if (hMeta.abType) {
+      const abBtn = document.getElementById('btnAbility');
+      const lbl = document.getElementById('abLabel');
+      if (engine.power.cdLeft > 0) {
+        abBtn.classList.add('cd');
+        lbl.textContent = `${engine.power.cdLeft.toFixed(1)}s`;
+      } else {
+        abBtn.classList.remove('cd');
+        lbl.textContent = 'GATA';
+      }
+    }
+    const badges = [];
+    if (engine.lvlData.dim === 'VILLAGE') badges.push({ txt: '🏠 Satul lui Moș Crăciun', cls: 'village' });
+    if (engine.power.solarShield) badges.push({ txt: '🔥 Scut Festiv Activ', cls: '' });
+    if (engine.power.kind && engine.power.activeLeft > 0) badges.push({ txt: `${hMeta.abIcon} ${hMeta.abName} (${engine.power.activeLeft.toFixed(1)}s)`, cls: '' });
+    const box = document.getElementById('statusBadges');
+    box.innerHTML = badges.map(b => `<div class="status-pill ${b.cls}">${b.txt}</div>`).join('');
+  }
+
+  let activePromptMode = null;
+  function updatePromptUI() {
+    const wrap = document.getElementById('dimensionPrompt');
+    const btn = document.getElementById('btnPromptAction');
+    if (engine.nearTree && engine.lvlData.dim === 'MAIN') {
+      activePromptMode = 'TREE';
+      btn.textContent = '🎄 Deschide Ușa Bradului';
+      btn.className = 'neo-box prompt-btn bg-green';
+      wrap.style.display = 'flex';
+    } else if (engine.nearRet && engine.lvlData.dim === 'VILLAGE') {
+      activePromptMode = 'RETURN';
+      btn.textContent = '🌲 Înapoi la Nivel';
+      btn.className = 'neo-box prompt-btn bg-cyan';
+      wrap.style.display = 'flex';
+    } else if (engine.nearSanta && engine.lvlData.dim === 'VILLAGE') {
+      activePromptMode = 'SANTA';
+      btn.textContent = '🎅 Questurile lui Moș Crăciun';
+      btn.className = 'neo-box prompt-btn bg-amber';
+      wrap.style.display = 'flex';
+    } else {
+      activePromptMode = null;
+      wrap.style.display = 'none';
+    }
+  }
+
+  document.getElementById('btnPromptAction').onclick = () => {
+    if (activePromptMode === 'TREE') enterVillage();
+    else if (activePromptMode === 'RETURN') returnToMain();
+    else if (activePromptMode === 'SANTA') openSantaModal();
+  };
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  function openModal(title, html) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('modalBackdrop').style.display = 'flex';
+  }
+  function closeModal() {
+    document.getElementById('modalBackdrop').style.display = 'none';
+  }
+  document.getElementById('btnModalClose').onclick = closeModal;
+
+  /* Levels Modal */
+  function openLevelsModal() {
+    const maxShow = Math.max(25, progress.unlockedLevel + 4);
+    let tiles = '';
+    for (let i = 1; i <= maxShow; i++) {
+      const cur = i === progress.currentLevel;
+      const bossTag = (i === 10 || i === 20) ? '<span style="font-size:9px">👑 BOSS</span>' : '';
+      const cls = cur ? 'bg-amber' : (progress.completedLevels.includes(i) ? 'bg-green' : 'bg-white-sky');
+      tiles += `<button class="neo-box lvl-tile ${cls}" data-lvl="${i}"><span>${i}</span>${bossTag}</button>`;
+    }
+    openModal('🗺️ Selectare Nivel', `
+      <div class="card-panel">
+        <div class="row-between">
+          <span style="font-weight:900;font-size:13px">Mergi direct la orice nivel (1 - 999.999.999):</span>
+        </div>
+        <div class="row-between">
+          <input id="lvlInput" type="number" min="1" max="999999999" value="${progress.currentLevel}" style="flex:1;padding:8px;border:2.5px solid #0F172A;border-radius:10px;font-weight:900">
+          <button class="neo-box pill-btn bg-green" id="btnJumpLvl">▶ Joacă</button>
+        </div>
+      </div>
+      <div class="levels-grid">${tiles}</div>
+    `);
+    document.querySelectorAll('[data-lvl]').forEach(el => {
+      el.onclick = () => { loadLevel(Number(el.dataset.lvl)); closeModal(); };
+    });
+    document.getElementById('btnJumpLvl').onclick = () => {
+      loadLevel(Number(document.getElementById('lvlInput').value || 1));
+      closeModal();
+    };
+  }
+
+  /* Quests Modal */
+  function openQuestsModal() {
+    const dailyRem = Math.max(0, DAY_MS - (Date.now() - progress.lastDailyTs));
+    const bonusRem = Math.max(0, DAY_MS - (Date.now() - progress.lastBonusQuestTs));
+    const bonusDone = progress.bonusStats.levelsDone >= 15 && progress.bonusStats.intrudersKilled >= 15 && progress.bonusStats.coinsGot >= 250;
+
+    let html = `
+      <div class="card-panel" style="background:linear-gradient(135deg,#FFF9DB,#FFE8CC)">
+        <div class="row-between">
+          <div>
+            <div style="font-weight:900;font-size:14px">🎁 Câștig Zilnic (24h)</div>
+            <div style="font-size:11.5px;color:#475569">${dailyRem > 0 ? 'Disponibil în: ' + fmtTimer(dailyRem) : 'Cadou gata de colectat: +50 🪙!'}</div>
+          </div>
+          <button class="neo-box pill-btn ${dailyRem > 0 ? 'bg-frost' : 'bg-gold'}" id="btnDailyClaim">${dailyRem > 0 ? '⏳ ' + fmtTimer(dailyRem) : 'Colectează +50 🪙'}</button>
+        </div>
+      </div>
+      <div class="card-panel" style="background:linear-gradient(135deg,#E7F5FF,#D0EBFF)">
+        <div style="font-weight:900;font-size:14px">🌟 QUEST BONUS DE CRĂCIUN (24h)</div>
+        <div style="font-size:11.5px;color:#334155">Niveluri: ${progress.bonusStats.levelsDone}/15 • Elfi: ${progress.bonusStats.intrudersKilled}/15 • Monede: ${progress.bonusStats.coinsGot}/250</div>
+        <button class="neo-box pill-btn ${bonusDone && bonusRem === 0 ? 'bg-green' : 'bg-frost'}" id="btnBonusClaim">${bonusRem > 0 ? '⏳ ' + fmtTimer(bonusRem) : 'Revendică +200 🪙'}</button>
+      </div>
+    `;
+
+    STANDARD_QUESTS.forEach(q => {
+      const val = progress.stats[q.statKey] || 0;
+      const pct = Math.min(100, Math.round((val / q.target) * 100));
+      const ready = val >= q.target;
+      html += `
+        <div class="card-panel">
+          <div class="row-between">
+            <div>
+              <div style="font-weight:900;font-size:13.5px">${q.name}</div>
+              <div style="font-size:11px;color:#475569">${q.sub}</div>
+            </div>
+            <button class="neo-box pill-btn ${ready ? 'bg-green' : 'bg-frost'}" data-q="${q.id}">${ready ? `+${q.reward} 🪙` : `${val}/${q.target}`}</button>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    });
+
+    openModal('📜 Questuri & Bonusuri', html);
+    document.getElementById('btnDailyClaim').onclick = () => {
+      if (dailyRem > 0) return showToast('Revino mâine pentru cadoul zilnic!');
+      progress.lastDailyTs = Date.now(); progress.coins += 50;
+      audio.coin(); saveProgress(); syncHud(); openQuestsModal();
+    };
+    document.getElementById('btnBonusClaim').onclick = () => {
+      if (!bonusDone || bonusRem > 0) return showToast('Completează toate cele 3 obiective bonus!');
+      progress.lastBonusQuestTs = Date.now(); progress.bonusStats = { levelsDone: 0, intrudersKilled: 0, coinsGot: 0 };
+      progress.coins += 200; progress.passXP += 150;
+      audio.win(); saveProgress(); syncHud(); openQuestsModal();
+    };
+    document.querySelectorAll('[data-q]').forEach(btn => {
+      btn.onclick = () => {
+        const q = STANDARD_QUESTS.find(x => x.id === btn.dataset.q);
+        if (!q || (progress.stats[q.statKey] || 0) < q.target) return;
+        progress.stats[q.statKey] -= q.target;
+        progress.coins += q.reward; progress.passXP += 50;
+        audio.coin(); saveProgress(); syncHud(); openQuestsModal();
+      };
+    });
+  }
+
+  /* Santa Quests Modal */
+  function openSantaModal() {
+    let html = `<div class="card-panel" style="background:linear-gradient(135deg,#FFF5F5,#FFE3E3)"><div style="font-weight:900;font-size:13px">🎅 Ho Ho Ho! Ajută-mă în Satul de Crăciun pentru premii uriașe!</div></div>`;
+    SANTA_QUESTS.forEach(q => {
+      const val = progress.santaStats[q.statKey] || 0;
+      const claimed = progress.santaStats.claimedSantaQuests.includes(q.id);
+      const ready = !claimed && val >= q.target;
+      const pct = Math.min(100, Math.round((val / q.target) * 100));
+      html += `
+        <div class="card-panel">
+          <div class="row-between">
+            <div>
+              <div style="font-weight:900;font-size:13.5px">${q.icon} ${q.name}</div>
+              <div style="font-size:11px;color:#475569">${q.sub}</div>
+            </div>
+            <button class="neo-box pill-btn ${claimed ? 'bg-mint' : (ready ? 'bg-amber' : 'bg-frost')}" data-sq="${q.id}">${claimed ? '✓ Gata' : (ready ? `+${q.reward} 🪙` : `${val}/${q.target}`)}</button>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    });
+    const allClaimed = SANTA_QUESTS.every(q => progress.santaStats.claimedSantaQuests.includes(q.id));
+    const grandClaimed = progress.santaStats.grandSleighClaimed;
+    html += `
+      <div class="card-panel" style="background:linear-gradient(135deg,#FFF9DB,#FCC419)">
+        <div style="font-weight:900;font-size:14px">🛷 Marea Binecuvântare a Săniei</div>
+        <div style="font-size:11px">Revendică toate cele 4 Questuri ale Moșului pentru +250 🪙 și +200 XP!</div>
+        <button class="neo-box pill-btn ${grandClaimed ? 'bg-mint' : (allClaimed ? 'bg-green' : 'bg-frost')}" id="btnGrandSleigh">${grandClaimed ? '✓ Revendicat' : 'Revendică +250 🪙'}</button>
+      </div>
+    `;
+    openModal('🎅 Questurile lui Moș Crăciun', html);
+    document.querySelectorAll('[data-sq]').forEach(b => {
+      b.onclick = () => {
+        const q = SANTA_QUESTS.find(x => x.id === b.dataset.sq);
+        if (!q || progress.santaStats.claimedSantaQuests.includes(q.id) || (progress.santaStats[q.statKey] || 0) < q.target) return;
+        progress.santaStats.claimedSantaQuests.push(q.id);
+        progress.coins += q.reward; progress.passXP += 75;
+        audio.win(); saveProgress(); syncHud(); openSantaModal();
+      };
+    });
+    document.getElementById('btnGrandSleigh').onclick = () => {
+      if (!allClaimed || grandClaimed) return;
+      progress.santaStats.grandSleighClaimed = true;
+      progress.coins += 250; progress.passXP += 200;
+      audio.win(); saveProgress(); syncHud(); openSantaModal();
+    };
+  }
+
+  /* Shop Modal with live Hero Previews */
+  let shopFilter = null;
+  function openShopModal() {
+    const chips = [['all', 'Toți'], ['comun', 'Comun'], ['rar', 'Rar'], ['epic', 'Epic'], ['mitic', 'Mitic'], ['legendar', 'Legendar'], ['divin', 'Divin']];
+    const filterHtml = chips.map(([k, lbl]) => {
+      const act = (k === 'all' && !shopFilter) || shopFilter === k;
+      return `<button class="neo-box filter-chip ${act ? 'bg-gold' : 'bg-frost'}" data-flt="${k}">${lbl}</button>`;
+    }).join('');
+
+    const list = shopFilter ? HEROES.filter(h => h.rarity === shopFilter) : HEROES;
+    const cardsHtml = list.map(h => {
+      const rar = RARITY[h.rarity];
+      const owned = progress.ownedHeroes.includes(h.id);
+      const eq = progress.equippedHero === h.id;
+      let actionHtml = '';
+      if (eq) actionHtml = `<button class="neo-box pill-btn bg-mint" style="width:100%" disabled>✓ Echipat</button>`;
+      else if (owned) actionHtml = `<button class="neo-box pill-btn bg-cyan" style="width:100%" data-equip="${h.id}">Echipează</button>`;
+      else if (h.currency === 'PASS') actionHtml = `<button class="neo-box pill-btn bg-amber" style="width:100%" data-go-pass="1">🏆 Pass Tier ${h.passTier}</button>`;
+      else {
+        actionHtml = `<button class="neo-box pill-btn bg-gold" style="width:100%" data-buy-c="${h.id}">🪙 ${h.price}</button>`;
+        if (h.gemPrice) actionHtml += `<button class="neo-box pill-btn bg-cyan" style="width:100%" data-buy-d="${h.id}">💎 ${h.gemPrice}</button>`;
+      }
+      return `
+        <div class="hero-card">
+          <span class="rarity-tag" style="background:${rar.color}">${rar.tag}</span>
+          <canvas width="56" height="56" data-hero-prev="${h.id}"></canvas>
+          <div style="font-weight:900;font-size:13.5px">${h.name}</div>
+          <div style="font-size:10.5px;color:#475569;min-height:28px">${h.abName ? `⚡ <b>${h.abName}</b>: ${h.abDesc}` : h.desc}</div>
+          ${actionHtml}
+        </div>
+      `;
+    }).join('');
+
+    openModal('🛒 Magazin de Eroi (24)', `<div class="filter-row">${filterHtml}</div><div class="hero-grid">${cardsHtml}</div>`);
+    document.querySelectorAll('[data-hero-prev]').forEach(c => {
+      const g = c.getContext('2d');
+      drawHeroVector(g, c.dataset.heroPrev, 10, 10, 36, 36, 1, engine.clock, 0, true);
+    });
+    document.querySelectorAll('[data-flt]').forEach(b => {
+      b.onclick = () => { shopFilter = b.dataset.flt === 'all' ? null : b.dataset.flt; openShopModal(); };
+    });
+    document.querySelectorAll('[data-equip]').forEach(b => {
+      b.onclick = () => {
+        progress.equippedHero = b.dataset.equip;
+        engine.power.solarShield = progress.equippedHero === 'phoenix_festiv';
+        audio.click(); saveProgress(); syncHud(); openShopModal();
+      };
+    });
+    document.querySelectorAll('[data-buy-c]').forEach(b => {
+      b.onclick = () => {
+        const h = findHero(b.dataset.buyC);
+        if (progress.coins < h.price) return showToast(`Ai nevoie de ${h.price} monede!`);
+        progress.coins -= h.price; progress.ownedHeroes.push(h.id); progress.equippedHero = h.id;
+        engine.power.solarShield = h.id === 'phoenix_festiv';
+        audio.win(); saveProgress(); syncHud(); openShopModal();
+      };
+    });
+    document.querySelectorAll('[data-buy-d]').forEach(b => {
+      b.onclick = () => {
+        const h = findHero(b.dataset.buyD);
+        if (progress.diamonds < h.gemPrice) return showToast(`Ai nevoie de ${h.gemPrice} diamante!`);
+        progress.diamonds -= h.gemPrice; progress.ownedHeroes.push(h.id); progress.equippedHero = h.id;
+        engine.power.solarShield = h.id === 'phoenix_festiv';
+        audio.diamond(); saveProgress(); syncHud(); openShopModal();
+      };
+    });
+    document.querySelectorAll('[data-go-pass]').forEach(b => {
+      b.onclick = () => openPassModal();
+    });
+  }
+
+  /* Vertical Christmas Pass Modal */
+  function openPassModal() {
+    const tierReached = Math.min(15, Math.floor(progress.passXP / 100) + 1);
+    const xpInTier = progress.passXP % 100;
+    let html = `
+      <div class="card-panel" style="background:linear-gradient(135deg,#0E223D,#173659);color:#fff">
+        <div class="row-between">
+          <div>
+            <div style="font-weight:900;font-size:15px;color:#FFE066">👑 CHRISTMAS PASS • Tier ${tierReached}/15</div>
+            <div style="font-size:11px;color:#BAE6FD">XP: ${xpInTier}/100 până la următorul Tier</div>
+          </div>
+          <button class="neo-box pill-btn ${progress.premiumUnlocked ? 'bg-mint' : 'bg-gold'}" id="btnBuyPrem">${progress.premiumUnlocked ? '✓ PREMIUM ACTIV' : `Deblochează ${PREMIUM_COST} 🪙`}</button>
+        </div>
+        <div class="prog-track"><div class="prog-fill" style="width:${xpInTier}%"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:44px 1fr 1fr;gap:8px;text-align:center;font-size:11px;font-weight:900;color:#475569">
+        <div>TIER</div><div>FREE PASS</div><div>👑 PREMIUM PASS</div>
+      </div>
+    `;
+
+    SEASON_TIERS.forEach(row => {
+      const unlocked = row.tier <= tierReached;
+      const freeTaken = progress.claimedFree.includes(row.tier);
+      const premTaken = progress.claimedPrem.includes(row.tier);
+      html += `
+        <div class="pass-tier-row">
+          <div class="tier-badge"><span>T${row.tier}</span></div>
+          <div class="pass-slot" style="background:${freeTaken ? '#D3F9D8' : '#fff'}">
+            <div>${row.free.icon} ${row.free.text}</div>
+            <button class="neo-box pill-btn ${freeTaken ? 'bg-mint' : (unlocked ? 'bg-green' : 'bg-frost')}" style="height:28px;font-size:11px;width:100%" data-pass-f="${row.tier}">${freeTaken ? '✓ Primit' : (unlocked ? 'Revendică' : '🔒')}</button>
+          </div>
+          <div class="pass-slot" style="background:${premTaken ? '#FFF3BF' : '#FFF9DB'}">
+            <div>${row.prem.icon} ${row.prem.text}</div>
+            <button class="neo-box pill-btn ${premTaken ? 'bg-mint' : (unlocked && progress.premiumUnlocked ? 'bg-gold' : 'bg-frost')}" style="height:28px;font-size:11px;width:100%" data-pass-p="${row.tier}">${premTaken ? (row.prem.kind === 'hero' ? 'Echipează' : '✓ Primit') : (progress.premiumUnlocked && unlocked ? 'Revendică' : '🔒')}</button>
+          </div>
+        </div>
+      `;
+    });
+
+    openModal('🏆 Christmas Pass (Vertical)', html);
+    document.getElementById('btnBuyPrem').onclick = () => {
+      if (progress.premiumUnlocked) return;
+      if (progress.coins < PREMIUM_COST) return showToast(`Îți lipsesc ${PREMIUM_COST - progress.coins} 🪙 din Questuri!`);
+      progress.coins -= PREMIUM_COST; progress.premiumUnlocked = true;
+      audio.win(); saveProgress(); syncHud(); openPassModal();
+    };
+    document.querySelectorAll('[data-pass-f]').forEach(b => {
+      b.onclick = () => {
+        const t = Number(b.dataset.passF);
+        if (t > tierReached || progress.claimedFree.includes(t)) return;
+        const item = SEASON_TIERS[t - 1].free;
+        progress.claimedFree.push(t);
+        progress.coins += item.amount;
+        audio.coin(); saveProgress(); syncHud(); openPassModal();
+      };
+    });
+    document.querySelectorAll('[data-pass-p]').forEach(b => {
+      b.onclick = () => {
+        const t = Number(b.dataset.passP);
+        const item = SEASON_TIERS[t - 1].prem;
+        if (progress.claimedPrem.includes(t) && item.kind === 'hero') {
+          progress.equippedHero = item.heroId;
+          saveProgress(); syncHud(); showToast('Ai echipat eroul din Pass!'); return;
+        }
+        if (!progress.premiumUnlocked) return showToast(`Deblochează Premium Pass (${PREMIUM_COST} 🪙)!`);
+        if (t > tierReached || progress.claimedPrem.includes(t)) return;
+        progress.claimedPrem.push(t);
+        if (item.kind === 'coins') progress.coins += item.amount;
+        else if (item.kind === 'diamonds') progress.diamonds += item.amount;
+        else if (item.kind === 'hero') {
+          if (!progress.ownedHeroes.includes(item.heroId)) progress.ownedHeroes.push(item.heroId);
+          progress.equippedHero = item.heroId;
+        }
+        audio.win(); saveProgress(); syncHud(); openPassModal();
+      };
+    });
+  }
+
+  /* Settings & Victory Modals */
+  function openSettingsModal() {
+    openModal('⚙️ Setări Joc', `
+      <div class="card-panel">
+        <div class="row-between">
+          <span style="font-weight:900">🔊 Efecte Sonore</span>
+          <button class="neo-box pill-btn ${audio.muted ? 'bg-red' : 'bg-green'}" id="btnSetSound">${audio.muted ? 'Oprit' : 'Pornit'}</button>
+        </div>
+      </div>
+      <div class="card-panel">
+        <div class="row-between">
+          <span style="font-weight:900">🏠 Meniu Principal</span>
+          <button class="neo-box pill-btn bg-cyan" id="btnSetHome">Înapoi la Intrare</button>
+        </div>
+      </div>
+      <div class="card-panel">
+        <div class="row-between">
+          <span style="font-weight:900">🗑️ Șterge Progresul</span>
+          <button class="neo-box pill-btn bg-red" id="btnSetReset">Resetează</button>
+        </div>
+      </div>
+    `);
+    document.getElementById('btnSetSound').onclick = () => { audio.muted = !audio.muted; document.getElementById('btnSound').textContent = audio.muted ? '🔇' : '🔊'; openSettingsModal(); };
+    document.getElementById('btnSetHome').onclick = () => { closeModal(); document.getElementById('entranceOverlay').style.display = 'flex'; };
+    document.getElementById('btnSetReset').onclick = () => { progress = defaultProgress(); saveProgress(); loadLevel(1); closeModal(); showToast('Progres resetat!'); };
+  }
+
+  function openVictoryModal(lvl, coins, xp, diamonds) {
+    openModal(`🎉 Nivel ${lvl} Completat!`, `
+      <div class="card-panel" style="text-align:center;background:linear-gradient(135deg,#FFF9DB,#D3F9D8)">
+        <div style="font-size:32px">🏆🎄✨</div>
+        <div style="font-weight:900;font-size:16px">Felicitări! Ai trecut prin Ușa de Finish!</div>
+        <div style="font-weight:800;font-size:13px">🪙 +${coins} Monede • ⭐ +${xp} Pass XP • 💎 +${diamonds} Diamante</div>
+      </div>
+      <button class="neo-box pill-btn bg-green" style="height:48px;font-size:15px" id="btnNextLvl">▶ Nivelul Următor (${lvl + 1})</button>
+      <button class="neo-box pill-btn bg-cyan" style="height:44px" id="btnReplayLvl">↻ Joacă din nou</button>
+    `);
+    document.getElementById('btnNextLvl').onclick = () => { loadLevel(lvl + 1); closeModal(); };
+    document.getElementById('btnReplayLvl').onclick = () => { loadLevel(lvl); closeModal(); };
+  }
+
+  /* Bind Touch + Keyboard + Button Events */
+  function bindHold(el, onDown, onUp) {
+    el.addEventListener('pointerdown', e => { e.preventDefault(); el.classList.add('pressed'); onDown(); });
+    const up = e => { e.preventDefault(); el.classList.remove('pressed'); onUp(); };
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('pointerleave', up);
+  }
+  bindHold(document.getElementById('btnLeft'), () => engine.input.left = true, () => engine.input.left = false);
+  bindHold(document.getElementById('btnRight'), () => engine.input.right = true, () => engine.input.right = false);
+
+  const btnJump = document.getElementById('btnJump');
+  btnJump.addEventListener('pointerdown', e => { e.preventDefault(); btnJump.classList.add('pressed'); triggerJump(); });
+  btnJump.addEventListener('pointerup', () => btnJump.classList.remove('pressed'));
+  btnJump.addEventListener('pointercancel', () => btnJump.classList.remove('pressed'));
+
+  document.getElementById('btnAbility').onclick = activateAbility;
+  document.getElementById('btnHudHero').onclick = openShopModal;
+  document.getElementById('btnLevels').onclick = openLevelsModal;
+  document.getElementById('btnQuests').onclick = openQuestsModal;
+  document.getElementById('btnShop').onclick = openShopModal;
+  document.getElementById('btnPass').onclick = openPassModal;
+  document.getElementById('btnHudSettings').onclick = openSettingsModal;
+  document.getElementById('btnSound').onclick = () => { audio.muted = !audio.muted; document.getElementById('btnSound').textContent = audio.muted ? '🔇' : '🔊'; };
+  document.getElementById('btnRestart').onclick = () => { loadLevel(progress.currentLevel); showToast('Nivel reînceput!'); };
+  document.getElementById('btnRotate').onclick = () => showToast('Rotește telefonul pentru modul Orizontal 🔄');
+
+  document.getElementById('btnMenuPlay').onclick = () => { audio.click(); document.getElementById('entranceOverlay').style.display = 'none'; };
+  document.getElementById('btnMenuSettings').onclick = () => { audio.click(); openSettingsModal(); };
+  document.getElementById('btnMenuExit').onclick = () => { showToast('🎄 Mulțumim că ai jucat Christmas Parkour!'); };
+
+  canvas.addEventListener('pointerdown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const h = canvas.clientHeight;
+    const scale = h < 440 ? dpr * Math.max(0.74, h / 480) : dpr;
+    const wx = ((e.clientX - rect.left) * dpr) / scale + engine.camX;
+    const wy = ((e.clientY - rect.top) * dpr) / scale + engine.camY;
+    if (engine.lvlData.dim === 'MAIN') {
+      const t = engine.lvlData.startTree;
+      if (t.hasDoor && Math.abs(wx - t.x) < 62 && wy >= t.y - 110 && wy <= t.y + 20) enterVillage();
+    } else {
+      const rd = engine.lvlData.returnDoor;
+      if (rd && Math.abs(wx - rd.x) < 62 && wy >= rd.y - 110 && wy <= rd.y + 20) returnToMain();
+      const sl = engine.lvlData.sleigh;
+      if (sl && wx >= sl.x - 165 && wx <= sl.x + 155 && wy >= sl.y - 140 && wy <= sl.y + 20) openSantaModal();
+    }
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') engine.input.left = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') engine.input.right = true;
+    if ((e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !e.repeat) triggerJump();
+    if (e.code === 'KeyE' || e.code === 'ShiftLeft') activateAbility();
+  });
+  window.addEventListener('keyup', e => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') engine.input.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') engine.input.right = false;
+  });
+
+  /* Entrance Snowflakes */
+  const entSnow = document.getElementById('entranceSnow');
+  const entCtx = entSnow.getContext('2d');
+  const entDrops = Array.from({ length: 65 }, (_, i) => ({ x: (i * 97) % 1000, y: (i * 73) % 900, r: 1.5 + (i % 3), s: 0.7 + (i % 4) * 0.4 }));
+
+  let lastTs = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastTs) / 1000);
+    lastTs = now;
+
+    const dpr = window.devicePixelRatio || 1;
+    const h = canvas.clientHeight;
+    const worldScale = h < 440 ? dpr * Math.max(0.74, h / 480) : dpr;
+    const viewW = (canvas.clientWidth * dpr) / worldScale;
+    const viewH = (canvas.clientHeight * dpr) / worldScale;
+
+    if (document.getElementById('entranceOverlay').style.display !== 'none') {
+      if (entSnow.width !== entSnow.clientWidth || entSnow.height !== entSnow.clientHeight) {
+        entSnow.width = entSnow.clientWidth; entSnow.height = entSnow.clientHeight;
+      }
+      entCtx.clearRect(0, 0, entSnow.width, entSnow.height);
+      entCtx.fillStyle = 'rgba(255,255,255,0.65)';
+      for (const d of entDrops) {
+        d.y = (d.y + d.s * 1.4) % (entSnow.height || 800);
+        entCtx.beginPath(); entCtx.arc(d.x % (entSnow.width || 400), d.y, d.r, 0, Math.PI * 2); entCtx.fill();
+      }
+      const ec = entHeroC.getContext('2d');
+      ec.clearRect(0, 0, 76, 76);
+      drawHeroVector(ec, progress.equippedHero, 18, 18 + Math.sin(now * 0.004) * 2.5, 40, 40, 1, now / 1000, 0, true);
+    }
+
+    if (document.getElementById('entranceOverlay').style.display === 'none' && document.getElementById('modalBackdrop').style.display !== 'flex') {
+      stepSimulation(viewW, viewH, dt);
+    }
+    renderWorld();
+    syncAbilityAndBadges();
+
+    const hc = hudHeroC.getContext('2d');
+    hc.clearRect(0, 0, 32, 32);
+    drawHeroVector(hc, progress.equippedHero, 5, 5, 22, 22, 1, now / 1000, 0, true);
+
+    requestAnimationFrame(frame);
+  }
+
+  loadLevel(progress.currentLevel);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

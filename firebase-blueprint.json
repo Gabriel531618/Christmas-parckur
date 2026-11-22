@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "UserCheckpoint": {
+      "title": "UserCheckpoint",
+      "description": "Cloud-saved player progress and active in-level checkpoint snapshot owned strictly by the authenticated user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "displayName": { "type": "string", "description": "Player display name from Google profile." },
+        "coins": { "type": "integer", "description": "Total coins collected." },
+        "diamonds": { "type": "integer", "description": "Total diamonds collected." },
+        "galactic": { "type": "integer", "description": "Total galactic stars." },
+        "currentLevel": { "type": "integer", "description": "Active selected level." },
+        "unlockedLevel": { "type": "integer", "description": "Highest unlocked level." },
+        "completedLevels": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Set of completed level indices."
+        },
+        "ownedHeroes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Unlocked hero IDs."
+        },
+        "equippedHero": { "type": "string", "description": "Currently equipped hero ID." },
+        "passXP": { "type": "integer", "description": "Christmas Pass XP." },
+        "premiumUnlocked": { "type": "boolean", "description": "Whether Premium Pass is unlocked." },
+        "claimedFree": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Claimed free pass tiers."
+        },
+        "claimedPrem": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Claimed premium pass tiers."
+        },
+        "lastDailyTs": { "type": "integer", "description": "Last daily reward claim epoch millis." },
+        "lastBonusQuestTs": { "type": "integer", "description": "Last bonus quest claim epoch millis." },
+        "checkpointLevel": { "type": "integer", "description": "Level number of saved mid-level checkpoint (0 if none)." },
+        "checkpointX": { "type": "number", "description": "World X spawn coordinate of active checkpoint." },
+        "checkpointY": { "type": "number", "description": "World Y spawn coordinate of active checkpoint." },
+        "statsLevelsDone": { "type": "integer", "description": "Standard quest counter: levels completed." },
+        "statsIntrudersKilled": { "type": "integer", "description": "Standard quest counter: elf goblins defeated." },
+        "statsCoinsGot": { "type": "integer", "description": "Standard quest counter: coins collected." },
+        "statsJumpsMade": { "type": "integer", "description": "Standard quest counter: jumps made." },
+        "bonusLevelsDone": { "type": "integer", "description": "24h bonus quest counter: levels completed." },
+        "bonusIntrudersKilled": { "type": "integer", "description": "24h bonus quest counter: elf goblins defeated." },
+        "bonusCoinsGot": { "type": "integer", "description": "24h bonus quest counter: coins collected." },
+        "santaGiftsDelivered": { "type": "integer", "description": "Santa village gifts collected." },
+        "santaHousesVisited": { "type": "integer", "description": "Santa village houses lit." },
+        "santaBubbleJumps": { "type": "integer", "description": "Santa quest bubble jumps." },
+        "santaSleighCoins": { "type": "integer", "description": "Santa quest sleigh coins." },
+        "claimedSantaQuests": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of claimed Santa quests."
+        },
+        "grandSleighClaimed": { "type": "boolean", "description": "Whether Santa grand sleigh reward was claimed." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server last checkpoint update timestamp." }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "coins",
+        "diamonds",
+        "galactic",
+        "currentLevel",
+        "unlockedLevel",
+        "completedLevels",
+        "ownedHeroes",
+        "equippedHero",
+        "passXP",
+        "premiumUnlocked",
+        "claimedFree",
+        "claimedPrem",
+        "lastDailyTs",
+        "lastBonusQuestTs",
+        "checkpointLevel",
+        "checkpointX",
+        "checkpointY",
+        "statsLevelsDone",
+        "statsIntrudersKilled",
+        "statsCoinsGot",
+        "statsJumpsMade",
+        "bonusLevelsDone",
+        "bonusIntrudersKilled",
+        "bonusCoinsGot",
+        "santaGiftsDelivered",
+        "santaHousesVisited",
+        "santaBubbleJumps",
+        "santaSleighCoins",
+        "claimedSantaQuests",
+        "grandSleighClaimed",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "collections": [
+      {
+        "path": "/users/{userId}/checkpoints/{checkpointId}",
+        "schema": { "$ref": "#/entities/UserCheckpoint" },
+        "description": "Private user checkpoint save document ('main') scoped to owner UID."
+      }
+    ]
+  }
+}

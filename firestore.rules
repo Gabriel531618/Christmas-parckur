@@ -1,0 +1,167 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny rule: reject every unspecified read or write path.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.matches('^[a-zA-Z0-9_-]{1,128}$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function allCheckpointKeys() {
+      return [
+        'userId',
+        'displayName',
+        'coins',
+        'diamonds',
+        'galactic',
+        'currentLevel',
+        'unlockedLevel',
+        'completedLevels',
+        'ownedHeroes',
+        'equippedHero',
+        'passXP',
+        'premiumUnlocked',
+        'claimedFree',
+        'claimedPrem',
+        'lastDailyTs',
+        'lastBonusQuestTs',
+        'checkpointLevel',
+        'checkpointX',
+        'checkpointY',
+        'statsLevelsDone',
+        'statsIntrudersKilled',
+        'statsCoinsGot',
+        'statsJumpsMade',
+        'bonusLevelsDone',
+        'bonusIntrudersKilled',
+        'bonusCoinsGot',
+        'santaGiftsDelivered',
+        'santaHousesVisited',
+        'santaBubbleJumps',
+        'santaSleighCoins',
+        'claimedSantaQuests',
+        'grandSleighClaimed',
+        'createdAt',
+        'updatedAt'
+      ];
+    }
+
+    function mutableCheckpointKeys() {
+      return [
+        'displayName',
+        'coins',
+        'diamonds',
+        'galactic',
+        'currentLevel',
+        'unlockedLevel',
+        'completedLevels',
+        'ownedHeroes',
+        'equippedHero',
+        'passXP',
+        'premiumUnlocked',
+        'claimedFree',
+        'claimedPrem',
+        'lastDailyTs',
+        'lastBonusQuestTs',
+        'checkpointLevel',
+        'checkpointX',
+        'checkpointY',
+        'statsLevelsDone',
+        'statsIntrudersKilled',
+        'statsCoinsGot',
+        'statsJumpsMade',
+        'bonusLevelsDone',
+        'bonusIntrudersKilled',
+        'bonusCoinsGot',
+        'santaGiftsDelivered',
+        'santaHousesVisited',
+        'santaBubbleJumps',
+        'santaSleighCoins',
+        'claimedSantaQuests',
+        'grandSleighClaimed',
+        'updatedAt'
+      ];
+    }
+
+    function isValidCheckpoint(data, userId) {
+      return data.userId is string && data.userId == userId
+        && data.displayName is string && data.displayName.size() <= 120
+        && data.coins is int && data.coins >= 0 && data.coins <= 1000000000
+        && data.diamonds is int && data.diamonds >= 0 && data.diamonds <= 1000000000
+        && data.galactic is int && data.galactic >= 0 && data.galactic <= 1000000000
+        && data.currentLevel is int && data.currentLevel >= 1 && data.currentLevel <= 999999999
+        && data.unlockedLevel is int && data.unlockedLevel >= 1 && data.unlockedLevel <= 999999999
+        && data.completedLevels is list && data.completedLevels.size() <= 5000
+          && (data.completedLevels.size() == 0 || data.completedLevels[0] is int)
+        && data.ownedHeroes is list && data.ownedHeroes.size() >= 1 && data.ownedHeroes.size() <= 50
+          && data.ownedHeroes[0] is string
+        && data.equippedHero is string && data.equippedHero.size() >= 1 && data.equippedHero.size() <= 64
+        && data.passXP is int && data.passXP >= 0 && data.passXP <= 1000000000
+        && data.premiumUnlocked is bool
+        && data.claimedFree is list && data.claimedFree.size() <= 30
+          && (data.claimedFree.size() == 0 || data.claimedFree[0] is int)
+        && data.claimedPrem is list && data.claimedPrem.size() <= 30
+          && (data.claimedPrem.size() == 0 || data.claimedPrem[0] is int)
+        && data.lastDailyTs is int && data.lastDailyTs >= 0
+        && data.lastBonusQuestTs is int && data.lastBonusQuestTs >= 0
+        && data.checkpointLevel is int && data.checkpointLevel >= 0 && data.checkpointLevel <= 999999999
+        && data.checkpointX is number && data.checkpointX >= 0 && data.checkpointX <= 1000000
+        && data.checkpointY is number && data.checkpointY >= -10000 && data.checkpointY <= 100000
+        && data.statsLevelsDone is int && data.statsLevelsDone >= 0
+        && data.statsIntrudersKilled is int && data.statsIntrudersKilled >= 0
+        && data.statsCoinsGot is int && data.statsCoinsGot >= 0
+        && data.statsJumpsMade is int && data.statsJumpsMade >= 0
+        && data.bonusLevelsDone is int && data.bonusLevelsDone >= 0
+        && data.bonusIntrudersKilled is int && data.bonusIntrudersKilled >= 0
+        && data.bonusCoinsGot is int && data.bonusCoinsGot >= 0
+        && data.santaGiftsDelivered is int && data.santaGiftsDelivered >= 0
+        && data.santaHousesVisited is int && data.santaHousesVisited >= 0
+        && data.santaBubbleJumps is int && data.santaBubbleJumps >= 0
+        && data.santaSleighCoins is int && data.santaSleighCoins >= 0
+        && data.claimedSantaQuests is list && data.claimedSantaQuests.size() <= 20
+          && (data.claimedSantaQuests.size() == 0 || data.claimedSantaQuests[0] is string)
+        && data.grandSleighClaimed is bool
+        && data.createdAt is timestamp && data.createdAt <= request.time
+        && data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/checkpoints/{checkpointId} {
+      allow get: if isOwner(userId) && isValidId(userId) && checkpointId == 'main';
+      allow list: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && checkpointId == 'main'
+        && incoming().keys().hasAll(allCheckpointKeys())
+        && incoming().keys().hasOnly(allCheckpointKeys())
+        && isValidCheckpoint(incoming(), userId);
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && checkpointId == 'main'
+        && incoming().diff(existing()).affectedKeys().hasOnly(mutableCheckpointKeys())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && isValidCheckpoint(incoming(), userId);
+      allow delete: if isOwner(userId) && isValidId(userId) && checkpointId == 'main';
+    }
+  }
+}

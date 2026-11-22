@@ -1,0 +1,4028 @@
+```html
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Parkour Adventure 2.5 - Ultra-Cosmic Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f172a;
+            --border-w: 3.5px;
+            --shadow-solid: 0 4px 0 #0f172a;
+            --shadow-pressed: 0 1px 0 #0f172a;
+            --font-main: 'Fredoka', 'Nunito', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: var(--font-main);
+            background-color: #050714;
+            touch-action: none;
+        }
+
+        #game-shell {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 20%, #1b1448 0%, #0d0c2b 55%, #050614 100%);
+        }
+
+        /* Fallback CSS 90° pentru Mod Orizontal */
+        body.css-landscape #game-shell {
+            position: fixed;
+            width: 100vh;
+            height: 100vw;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            transform-origin: center center;
+        }
+
+        canvas#gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* =========================================================
+           EFECT STRĂLUCIRE PRISMATICĂ PENTRU NESTEMATE GALACTICE (💠)
+           ========================================================= */
+        .galactic-gem-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .galactic-gem-svg {
+            width: 20px;
+            height: 20px;
+            filter: drop-shadow(0 0 5px rgba(240, 101, 149, 0.9)) drop-shadow(0 0 8px rgba(59, 201, 219, 0.85));
+            animation: gemPrismaticPulse 2.2s infinite ease-in-out;
+            z-index: 2;
+        }
+
+        .galactic-gem-spark {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #ffffff;
+            clip-path: polygon(50% 0%, 64% 36%, 100% 50%, 64% 64%, 50% 100%, 36% 64%, 0% 50%, 36% 36%);
+            animation: gemStarTwinkle 1.6s infinite ease-in-out;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .galactic-gem-spark.s1 { top: -2px; right: -2px; animation-delay: 0s; }
+        .galactic-gem-spark.s2 { bottom: -1px; left: -2px; width: 5px; height: 5px; background: #ffe066; animation-delay: 0.8s; }
+
+        @keyframes gemPrismaticPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 4px rgba(151, 117, 250, 0.9)) brightness(1); }
+            50% { transform: scale(1.15) rotate(6deg); filter: drop-shadow(0 0 9px rgba(102, 217, 232, 1)) brightness(1.25); }
+        }
+
+        @keyframes gemStarTwinkle {
+            0%, 100% { transform: scale(0.2) rotate(0deg); opacity: 0.1; }
+            50% { transform: scale(1.25) rotate(45deg); opacity: 1; }
+        }
+
+        .bg-galactic {
+            background: linear-gradient(135deg, #241759 0%, #5f276b 50%, #164e63 100%) !important;
+            color: #ffffff !important;
+            text-shadow: 0 1.5px 0 #0f172a;
+            box-shadow: 0 4px 0 #0f172a, 0 0 14px rgba(151, 117, 250, 0.5) !important;
+        }
+
+        /* =========================================================
+           ECRAN DE LOADING 2.5 ULTRA-COSMIC (3 SECUNDE)
+           ========================================================= */
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 25%, #251968 0%, #0f0d33 60%, #040510 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 250;
+            transition: opacity 0.45s ease, visibility 0.45s ease;
+            overflow: hidden;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        #loadingBgCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .loading-box {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 450px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(243, 240, 255, 0.94) 100%);
+            backdrop-filter: blur(12px);
+            border: 4px solid var(--ink);
+            border-radius: 30px;
+            box-shadow: 0 10px 0 var(--ink), 0 0 45px rgba(132, 94, 247, 0.7);
+            padding: 22px 18px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .loading-badge {
+            background: linear-gradient(90deg, #ff922b 0%, #f06595 50%, #3bc9db 100%);
+            color: #ffffff;
+            text-shadow: 0 1.5px 0 #0f172a;
+            border: 3px solid var(--ink);
+            border-radius: 999px;
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.6px;
+            box-shadow: 0 3px 0 var(--ink);
+        }
+
+        .loading-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+
+        .loading-sub {
+            font-size: 12.5px;
+            font-weight: 800;
+            color: #5f3dc4;
+            margin-top: -3px;
+        }
+
+        .loading-tip {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #1e1b4b;
+            background: #e5dbff;
+            border: 3px solid var(--ink);
+            border-radius: 15px;
+            padding: 8px 12px;
+            width: 100%;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 30px;
+            background: #1e1b4b;
+            border: 3.5px solid var(--ink);
+            border-radius: 16px;
+            box-shadow: 0 4px 0 var(--ink);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3bc9db 0%, #845ef7 50%, #f06595 100%);
+            box-shadow: 0 0 16px rgba(59, 201, 219, 0.9);
+            transition: width 0.05s linear;
+        }
+
+        .progress-label {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 2px 0 #0f172a, 0 -1px 0 #0f172a, 1px 0 0 #0f172a, -1px 0 0 #0f172a;
+        }
+
+        /* =========================================================
+           BUTOANE INTERACTIVE 2.5 (GLOSSY SWEEP + RADIAL RIPPLE)
+           ========================================================= */
+        .nb-card {
+            border: var(--border-w) solid var(--ink);
+            box-shadow: var(--shadow-solid);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(8px);
+            color: var(--ink);
+            font-weight: 800;
+        }
+
+        .fx-btn {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.08s ease, filter 0.15s ease;
+        }
+
+        .fx-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -75%;
+            width: 45%;
+            height: 200%;
+            background: linear-gradient(
+                120deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.55) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-22deg);
+            animation: glossySweep 3.4s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes glossySweep {
+            0%, 62% { left: -75%; }
+            88%, 100% { left: 145%; }
+        }
+
+        .fx-btn:hover { filter: brightness(1.06); }
+        .fx-btn:active, .fx-btn.active {
+            transform: translate(2px, 3px) scale(0.97) !important;
+            box-shadow: var(--shadow-pressed) !important;
+        }
+
+        .btn-ripple-wave {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(102, 217, 232, 0.55) 60%, rgba(255, 255, 255, 0) 100%);
+            animation: rippleExpand 0.48s ease-out forwards;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes rippleExpand {
+            to { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+        }
+
+        .nb-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        /* =========================================================
+           HUD SUS 2.5 ULTRA-COSMIC (GLASSMORPHISM + NEON GLOW)
+           ========================================================= */
+        #hud-top {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            flex-wrap: wrap;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .hud-cluster {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            background: rgba(15, 23, 42, 0.42);
+            backdrop-filter: blur(10px);
+            padding: 4px 6px;
+            border-radius: 18px;
+            border: 2px solid rgba(102, 217, 232, 0.38);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+        }
+
+        .hud-hero-badge {
+            pointer-events: auto;
+            width: 39px;
+            height: 39px;
+            border-radius: 13px;
+            border: 3.5px solid var(--ink);
+            box-shadow: var(--shadow-solid), 0 0 14px rgba(102, 217, 232, 0.7);
+            background: radial-gradient(circle at 50% 45%, #2b1e7a 0%, #0b0a24 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .hud-pill {
+            pointer-events: auto;
+            height: 38px;
+            padding: 4px 11px;
+            font-size: 13px;
+        }
+
+        .hud-sq-btn {
+            pointer-events: auto;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            font-size: 15px;
+        }
+
+        .bg-level { background: linear-gradient(180deg, #ffffff 0%, #e7f5ff 100%); }
+        .bg-coins { background: linear-gradient(180deg, #ffe066 0%, #fcc419 100%); }
+        .bg-diamonds { background: linear-gradient(180deg, #99e9f2 0%, #3bc9db 100%); }
+        .bg-daily { background: linear-gradient(180deg, #ff8787 0%, #fa5252 100%); color: #ffffff; text-shadow: 0 1px 0 #0f172a; }
+        .bg-daily.locked-daily { background: #dee2e6; color: #495057; text-shadow: none; }
+        .bg-quests { background: linear-gradient(180deg, #b197fc 0%, #7950f2 100%); color: #ffffff; text-shadow: 0 1px 0 #0f172a; }
+        .bg-shop { background: linear-gradient(180deg, #ff85b3 0%, #f06595 100%); color: #ffffff; text-shadow: 0 1px 0 #0f172a; }
+        .bg-pass { background: linear-gradient(180deg, #ffe066 0%, #f59f00 100%); }
+        .bg-rotate { background: linear-gradient(180deg, #b2f2bb 0%, #51cf66 100%); }
+        .bg-sound { background: #ffffff; }
+        .bg-restart { background: linear-gradient(180deg, #a5d8ff 0%, #4dabf7 100%); }
+
+        .coin-badge-dot {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #fff3bf, #fab005);
+            border: 2px solid #7c4d00;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 900;
+            color: #5c3800;
+            flex-shrink: 0;
+        }
+
+        #effects-strip {
+            position: absolute;
+            top: 62px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .fx-pill {
+            background: rgba(15, 23, 42, 0.92);
+            color: #ffffff;
+            border: 2.5px solid #3bc9db;
+            border-radius: 12px;
+            padding: 3px 11px;
+            font-size: 12px;
+            font-weight: 800;
+            box-shadow: 0 3px 0 #0f172a;
+        }
+
+        /* =========================================================
+           CONTROALE TOUCH JOS
+           ========================================================= */
+        #touch-controls {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .move-pad {
+            display: flex;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .pad-btn {
+            width: 66px;
+            height: 66px;
+            border-radius: 19px;
+            border: 3.5px solid var(--ink);
+            box-shadow: 0 5px 0 var(--ink);
+            background: linear-gradient(180deg, #ffffff 0%, #e7f5ff 100%);
+            font-size: 27px;
+            font-weight: 900;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-pad {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .jump-pad-btn {
+            width: 82px;
+            height: 82px;
+            border-radius: 23px;
+            border: 3.5px solid var(--ink);
+            box-shadow: 0 5px 0 var(--ink);
+            background: linear-gradient(180deg, #ffe066 0%, #fcc419 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .jump-pad-btn span {
+            font-size: 13.5px;
+            font-weight: 900;
+            color: var(--ink);
+        }
+
+        .ability-pad-btn {
+            width: 74px;
+            height: 74px;
+            border-radius: 21px;
+            border: 3.5px solid var(--ink);
+            box-shadow: 0 5px 0 var(--ink), 0 0 18px rgba(252, 196, 25, 0.55);
+            background: linear-gradient(135deg, #ffe066 0%, #ff922b 50%, #f06595 100%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .ability-pad-btn.visible { display: flex; }
+        .ability-pad-btn.cooldown { filter: grayscale(0.85); opacity: 0.88; cursor: not-allowed; }
+
+        .ability-pad-btn span {
+            font-size: 9.5px;
+            font-weight: 900;
+            color: var(--ink);
+            text-transform: uppercase;
+            z-index: 2;
+        }
+
+        .cd-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0%;
+            background: rgba(15, 23, 42, 0.65);
+            z-index: 1;
+        }
+
+        .cd-num {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 2px 0 #0f172a;
+            z-index: 3;
+        }
+
+        @media (orientation: landscape) and (max-height: 540px) {
+            .hud-pill { height: 32px; padding: 3px 9px; font-size: 12px; }
+            .hud-sq-btn { width: 32px; height: 32px; font-size: 14px; }
+            #touch-controls { bottom: 10px; }
+            .pad-btn { width: 54px; height: 54px; }
+            .jump-pad-btn { width: 68px; height: 68px; }
+            .ability-pad-btn { width: 60px; height: 60px; }
+            .modal-panel { max-width: 740px !important; max-height: 92vh !important; }
+            .levels-matrix { grid-template-columns: repeat(6, 1fr) !important; }
+            .shop-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; }
+        }
+
+        body.css-landscape .hud-pill { height: 32px; padding: 3px 9px; font-size: 12px; }
+        body.css-landscape .hud-sq-btn { width: 32px; height: 32px; font-size: 14px; }
+        body.css-landscape #touch-controls { bottom: 10px; }
+        body.css-landscape .pad-btn { width: 54px; height: 54px; }
+        body.css-landscape .jump-pad-btn { width: 68px; height: 68px; }
+        body.css-landscape .ability-pad-btn { width: 60px; height: 60px; }
+        body.css-landscape .modal-panel { max-width: 720px !important; max-height: 92% !important; }
+        body.css-landscape .levels-matrix { grid-template-columns: repeat(6, 1fr) !important; }
+        body.css-landscape .shop-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; }
+
+        /* =========================================================
+           FERESTRE MODALE 2.5 ULTRA-COSMIC
+           ========================================================= */
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 7, 20, 0.82);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 60;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+            animation: modalPop 0.16s ease-out;
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-panel {
+            width: 100%;
+            max-width: 540px;
+            max-height: 92vh;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(12px);
+            border: 3.5px solid var(--ink);
+            border-radius: 26px;
+            box-shadow: 0 8px 0 var(--ink), 0 0 32px rgba(132, 94, 247, 0.45);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-head {
+            padding: 13px 16px;
+            border-bottom: 3.5px solid var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .head-levels { background: linear-gradient(110deg, #66d9e8 0%, #9775fa 100%); }
+        .head-quests { background: linear-gradient(110deg, #4c1d95 0%, #9c36b5 55%, #0ca678 100%); color: #ffffff; }
+        .head-shop { background: linear-gradient(115deg, #3b1d82 0%, #ae3ec9 48%, #f59f00 100%); color: #ffffff; flex-direction: column; align-items: stretch; gap: 10px; }
+        .head-pass { background: linear-gradient(110deg, #2b1366 0%, #9c36b5 55%, #f59f00 100%); color: #ffffff; flex-direction: column; align-items: stretch; gap: 10px; }
+
+        .modal-heading {
+            font-size: 18px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-close-modal {
+            width: 35px;
+            height: 35px;
+            background: #ff6b6b;
+            border: 3px solid var(--ink);
+            border-radius: 11px;
+            box-shadow: 0 3px 0 var(--ink);
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Grid Nivele */
+        .levels-matrix {
+            padding: 14px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 9px;
+            overflow-y: auto;
+            touch-action: pan-y;
+        }
+
+        .lvl-cell {
+            position: relative;
+            min-height: 48px;
+            border: 3px solid var(--ink);
+            border-radius: 13px;
+            box-shadow: 0 4px 0 var(--ink);
+            background: #ffffff;
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lvl-cell.active-lvl { background: #fcc419; }
+        .lvl-cell.done-lvl { background: #ebfbee; }
+        .lvl-cell.done-lvl::after {
+            content: '★';
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            font-size: 9px;
+            color: #f59f00;
+        }
+        .lvl-cell.mystery-cell {
+            background: #0f172a;
+            color: #66d9e8;
+            letter-spacing: 1px;
+        }
+
+        /* Lista Questuri (+3 Nestemate & Quest Bonus +40 Nestemate) */
+        .quests-scroll {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            touch-action: pan-y;
+        }
+
+        .q-item {
+            background: #ffffff;
+            border: 3px solid var(--ink);
+            border-radius: 16px;
+            padding: 11px 12px;
+            box-shadow: 0 3px 0 var(--ink);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .q-item.bonus-quest {
+            background: linear-gradient(135deg, #f3f0ff 0%, #fff0f6 50%, #e3fafc 100%);
+            border-color: #7950f2;
+            border-width: 3.5px;
+            box-shadow: 0 4px 0 var(--ink), 0 0 15px rgba(151, 117, 250, 0.35);
+        }
+
+        .q-item.claimable { background: linear-gradient(180deg, #fff9db 0%, #f3f0ff 100%); border-color: #f59f00; }
+
+        .q-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .q-name { font-size: 14.5px; font-weight: 900; color: var(--ink); }
+        .q-sub { font-size: 12px; font-weight: 700; color: #495057; }
+
+        .q-reward-badge {
+            background: linear-gradient(135deg, #241759 0%, #7048e8 100%);
+            color: #ffffff;
+            border: 2.5px solid var(--ink);
+            border-radius: 10px;
+            padding: 3px 9px;
+            font-size: 12.5px;
+            font-weight: 900;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .q-bar-track {
+            width: 100%;
+            height: 18px;
+            background: #e9ecef;
+            border: 2.5px solid var(--ink);
+            border-radius: 9px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .q-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #845ef7, #f06595);
+            transition: width 0.25s ease;
+        }
+
+        .q-bar-txt {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10.5px;
+            font-weight: 900;
+            color: var(--ink);
+        }
+
+        .q-btn {
+            width: 100%;
+            padding: 8px;
+            border: 3px solid var(--ink);
+            border-radius: 12px;
+            box-shadow: 0 3px 0 var(--ink);
+            font-size: 13px;
+            font-weight: 900;
+            background: #51cf66;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .q-btn:disabled {
+            background: #dee2e6;
+            color: #6c757d;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* =========================================================
+           MAGAZIN EROI 2.5 - BARĂ DE FILTRE 100% VIZIBILĂ (FĂRĂ TĂIERE!)
+           ========================================================= */
+        .shop-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 7px;
+            padding: 11px 12px;
+            height: auto;
+            min-height: auto;
+            overflow: visible;
+            flex-shrink: 0;
+            background: linear-gradient(180deg, #f3f0ff 0%, #f8f9fa 100%);
+            border-bottom: 3px solid var(--ink);
+        }
+
+        .filter-pill {
+            border: 2.5px solid var(--ink);
+            border-radius: 11px;
+            box-shadow: 0 2.5px 0 var(--ink);
+            padding: 6px 11px;
+            font-size: 12.5px;
+            line-height: 1.2;
+            font-weight: 800;
+            white-space: nowrap;
+            background: #ffffff;
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .filter-pill.selected {
+            background: var(--ink) !important;
+            color: #ffffff !important;
+            transform: translateY(-1px);
+        }
+        .filter-pill.f-rar { background: #b2f2bb; }
+        .filter-pill.f-epic { background: #e5dbff; }
+        .filter-pill.f-mitic { background: #ffc9c9; }
+        .filter-pill.f-legendar { background: linear-gradient(135deg, #ffd8a8 0%, #ffa94d 100%); }
+        .filter-pill.f-divin { background: linear-gradient(135deg, #fff3bf 0%, #fcc419 50%, #ff8787 100%); }
+
+        .shop-grid {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            flex: 1;
+            background: #f8f9fa;
+            touch-action: pan-y;
+        }
+
+        .hero-box {
+            background: #ffffff;
+            border: 3px solid #adb5bd;
+            border-radius: 18px;
+            padding: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 3px 0 rgba(15, 23, 42, 0.12);
+        }
+
+        .hero-box.r-rar { border-color: #20c997; }
+        .hero-box.r-epic { border-color: #9775fa; }
+        .hero-box.r-mitic { border-color: #ff6b6b; }
+        .hero-box.r-legendar {
+            border-color: #f76707;
+            background: linear-gradient(180deg, #fff9f2 0%, #fff4e6 100%);
+        }
+        .hero-box.r-divin {
+            border-color: #f59f00;
+            background: linear-gradient(180deg, #fffdf5 0%, #fff9db 100%);
+        }
+        .hero-box.is-equipped { background: #f3fff9; border-width: 3.5px; }
+
+        .rarity-chip {
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            padding: 2px 8px;
+            font-size: 10.5px;
+            font-weight: 900;
+            color: var(--ink);
+        }
+
+        .chip-comun { background: #e9ecef; }
+        .chip-rar { background: #8ce99a; }
+        .chip-epic { background: #d0bfff; }
+        .chip-mitic { background: #ffa8a8; }
+        .chip-legendar { background: linear-gradient(90deg, #ffc078, #ff922b); }
+        .chip-divin { background: linear-gradient(90deg, #ffe066, #ffa94d, #ff8787); }
+
+        .hero-mid-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero-avatar-frame {
+            width: 68px;
+            height: 68px;
+            flex-shrink: 0;
+            background: radial-gradient(circle at 50% 45%, #23196b 0%, #0b0a24 100%);
+            border: 3px solid var(--ink);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 12px rgba(102, 217, 232, 0.35);
+        }
+
+        .hero-ability-note {
+            background: #fff3bf;
+            border: 2px solid #f59f00;
+            border-radius: 9px;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #5c3c00;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            line-height: 1.25;
+        }
+
+        .hero-buy-btn {
+            width: 100%;
+            padding: 8px;
+            border: 3px solid var(--ink);
+            border-radius: 12px;
+            box-shadow: 0 3px 0 var(--ink);
+            font-size: 13.5px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--ink);
+        }
+
+        .hb-equipped { background: #38d9a9; }
+        .hb-equip { background: #74c0fc; }
+        .hb-buy { background: #fcc419; }
+        .hb-pass { background: linear-gradient(90deg, #ffd43b, #ff922b); }
+
+        /* =========================================================
+           PARKOUR PASS PE 2 RÂNDURI CU 5 EROI EXCLUSIVI ÎN PREMIUM PASS
+           ========================================================= */
+        .pass-xp-track {
+            flex: 1;
+            min-width: 130px;
+            height: 22px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 2.5px solid var(--ink);
+            border-radius: 11px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .pass-xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fcc419, #51cf66);
+            width: 0%;
+            transition: width 0.25s ease;
+        }
+
+        .pass-xp-txt {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 1px 2px #0f172a;
+        }
+
+        .btn-prem-unlock {
+            background: linear-gradient(135deg, #241759 0%, #845ef7 55%, #f06595 100%);
+            border: 2.5px solid var(--ink);
+            border-radius: 10px;
+            box-shadow: 0 3px 0 var(--ink);
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 1px 0 #0f172a;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-prem-unlock.active-prem { background: #51cf66; color: var(--ink); text-shadow: none; cursor: default; }
+
+        .pass-viewport {
+            overflow-x: auto;
+            overflow-y: auto;
+            padding: 12px;
+            background: #f1f3f5;
+            touch-action: pan-x pan-y;
+        }
+
+        .pass-row-wrapper {
+            display: flex;
+            gap: 10px;
+            min-width: max-content;
+        }
+
+        .pass-sticky-labels {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+
+        .track-header-card {
+            width: 92px;
+            height: 134px;
+            border: 3px solid var(--ink);
+            border-radius: 14px;
+            box-shadow: 0 3px 0 var(--ink);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6px;
+            font-weight: 900;
+            font-size: 11.5px;
+            color: var(--ink);
+        }
+
+        .th-prem { background: linear-gradient(180deg, #ffd43b 0%, #f59f00 100%); }
+        .th-free { background: linear-gradient(180deg, #74c0fc 0%, #339af0 100%); }
+
+        .tier-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 126px;
+        }
+
+        .reward-slot {
+            height: 134px;
+            border: 3px solid var(--ink);
+            border-radius: 14px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            position: relative;
+            background: #ffffff;
+        }
+
+        .reward-slot.slot-prem {
+            background: linear-gradient(180deg, #fff9db 0%, #ffe8cc 100%);
+            border-color: #d9480f;
+        }
+
+        .reward-slot.slot-prem.has-hero-reward {
+            background: linear-gradient(180deg, #211552 0%, #4c1d95 100%);
+            color: #ffffff;
+            border-color: #fcc419;
+            box-shadow: 0 4px 0 var(--ink), 0 0 12px rgba(252, 196, 25, 0.55);
+        }
+
+        .reward-slot.slot-free { background: linear-gradient(180deg, #f8f9fa 0%, #e7f5ff 100%); }
+        .reward-slot.dimmed { opacity: 0.78; }
+
+        .tier-tag {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ink);
+            color: #ffffff;
+            font-size: 9.5px;
+            font-weight: 900;
+            padding: 1px 8px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        .slot-claim-btn {
+            width: 100%;
+            padding: 4px 3px;
+            border: 2px solid var(--ink);
+            border-radius: 8px;
+            font-size: 10.5px;
+            font-weight: 900;
+            background: #51cf66;
+            color: var(--ink);
+        }
+
+        .slot-claim-btn.equip-pass-hero { background: #3bc9db; color: var(--ink); }
+        .slot-claim-btn.done { background: #dee2e6; color: #495057; cursor: default; }
+        .slot-claim-btn.locked { background: #f1f3f5; color: #868e96; cursor: not-allowed; }
+
+        /* Toast & Win Overlay */
+        #toast-banner {
+            position: absolute;
+            top: 64px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: var(--ink);
+            color: #ffffff;
+            border: 2.5px solid #3bc9db;
+            padding: 7px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 120;
+            white-space: nowrap;
+            box-shadow: 0 4px 0 #000000;
+        }
+
+        #toast-banner.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        #victory-modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 7, 20, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 50;
+        }
+
+        #victory-modal.open { display: flex; animation: modalPop 0.2s ease-out; }
+
+        .victory-card {
+            background: #ffffff;
+            border: 3.5px solid var(--ink);
+            border-radius: 24px;
+            box-shadow: 0 8px 0 var(--ink);
+            padding: 20px;
+            text-align: center;
+            max-width: 375px;
+            width: 100%;
+        }
+
+        .btn-advance {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(180deg, #69db7c 0%, #40c057 100%);
+            border: 3.5px solid var(--ink);
+            border-radius: 15px;
+            box-shadow: 0 4px 0 var(--ink);
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--ink);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-shell">
+    <!-- 1. ECRAN DE LOADING 2.5 ULTRA-COSMIC -->
+    <div id="loading-screen">
+        <canvas id="loadingBgCanvas"></canvas>
+        <div class="loading-box">
+            <div class="loading-badge">🌌 PARKOUR ADVENTURE 2.5 - ULTRA-COSMIC EDITION 🌌</div>
+            <canvas id="loadingHeroPreview" width="96" height="96"></canvas>
+            <div class="loading-title">Parkour Adventure 2.5</div>
+            <div class="loading-sub">Meniu Ultra-Cosmic • Raritate Legendară • 18 Eroi Animați Live</div>
+            <div id="loading-tip" class="loading-tip">💡 Sfat: Explorează noua raritate LEGENDAR în Magazin și în Premium Pass!</div>
+            <div class="progress-track">
+                <div id="loading-progress-fill" class="progress-fill"></div>
+                <div id="loading-progress-label" class="progress-label">Inițializare portal 2.5... 0%</div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 2. HUD SUS 2.5 ULTRA-COSMIC -->
+    <div id="hud-top">
+        <div class="hud-cluster">
+            <button id="btn-hud-hero" class="hud-hero-badge fx-btn" title="Eroul Echipat (Deschide Magazinul)">
+                <canvas id="hudHeroCanvas" width="34" height="34"></canvas>
+            </button>
+            <button id="btn-levels" class="nb-card nb-btn fx-btn hud-pill bg-level">
+                <span>🏁</span>
+                <span id="hud-lvl-label">Nivel 1 / ????</span>
+                <span style="font-size:10px;">▼</span>
+            </button>
+            <div class="nb-card hud-pill bg-coins" style="display:flex;align-items:center;gap:5px;" title="Monede">
+                <span class="coin-badge-dot">1</span>
+                <span id="hud-coins-val">0</span>
+            </div>
+            <div class="nb-card hud-pill bg-diamonds" style="display:flex;align-items:center;gap:5px;" title="Diamante">
+                <span>💎</span>
+                <span id="hud-diamonds-val">0</span>
+            </div>
+            <div class="nb-card hud-pill bg-galactic" style="display:flex;align-items:center;gap:5px;" title="Nestemate Galactice">
+                <span class="galactic-gem-wrap">
+                    <span class="galactic-gem-spark s1"></span>
+                    <span class="galactic-gem-spark s2"></span>
+                    <svg class="galactic-gem-svg" viewBox="0 0 24 24">
+                        <defs>
+                            <linearGradient id="rombCosmic" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#3bc9db"/>
+                                <stop offset="50%" stop-color="#b197fc"/>
+                                <stop offset="100%" stop-color="#f06595"/>
+                            </linearGradient>
+                        </defs>
+                        <polygon points="12,1 23,12 12,23 1,12" fill="url(#rombCosmic)" stroke="#0f172a" stroke-width="2.5"/>
+                        <polygon points="12,4 19,12 12,20 5,12" fill="rgba(255,255,255,0.22)"/>
+                        <circle cx="9.5" cy="9" r="1.7" fill="#fff"/>
+                        <circle cx="15" cy="14.5" r="1.2" fill="#ffe066"/>
+                    </svg>
+                </span>
+                <span id="hud-galactic-val">0</span>
+            </div>
+        </div>
+
+        <div class="hud-cluster">
+            <button id="btn-quests" class="nb-card nb-btn fx-btn hud-pill bg-quests">
+                <span>📜</span>
+                <span>Questuri</span>
+            </button>
+            <button id="btn-shop" class="nb-card nb-btn fx-btn hud-pill bg-shop">
+                <span>🛒</span>
+                <span>Shop</span>
+            </button>
+            <button id="btn-pass" class="nb-card nb-btn fx-btn hud-pill bg-pass">
+                <span>🏆</span>
+                <span>Pass</span>
+            </button>
+            <button id="btn-rotate" class="nb-card nb-btn fx-btn hud-sq-btn bg-rotate" title="Mod Orizontal">🔄</button>
+            <button id="btn-sound" class="nb-card nb-btn fx-btn hud-sq-btn bg-sound" title="Sunet">🔊</button>
+            <button id="btn-restart" class="nb-card nb-btn fx-btn hud-sq-btn bg-restart" title="Reîncepe Nivelul">↻</button>
+        </div>
+    </div>
+
+    <!-- Bară efecte active -->
+    <div id="effects-strip"></div>
+
+    <!-- Toast Banner -->
+    <div id="toast-banner">Notificare</div>
+
+    <!-- 3. CONTROALE TOUCH 2.5 -->
+    <div id="touch-controls">
+        <div class="move-pad">
+            <button id="btn-left" class="pad-btn fx-btn" aria-label="Stânga">&lt;</button>
+            <button id="btn-right" class="pad-btn fx-btn" aria-label="Dreapta">&gt;</button>
+        </div>
+        <div class="action-pad">
+            <button id="btn-ability" class="ability-pad-btn fx-btn" aria-label="Abilitate Specială">
+                <div id="cd-fill" class="cd-fill"></div>
+                <div id="cd-num" class="cd-num" style="display:none;"></div>
+                <div id="ability-emoji" style="font-size:20px;z-index:2;">⚡</div>
+                <span id="ability-title">ABILITATE</span>
+            </button>
+            <button id="btn-jump" class="jump-pad-btn fx-btn" aria-label="Sari">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#0f172a">
+                    <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+                </svg>
+                <span>SARI</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. MODAL VICTORIE NIVEL -->
+    <div id="victory-modal">
+        <div class="victory-card">
+            <div style="font-size:44px;margin-bottom:4px;">🏆</div>
+            <h2 id="win-heading" style="font-size:20px;font-weight:900;color:#2b8a3e;">Nivelul 1 Completat! • Nivel 1 / ????</h2>
+            <p style="font-size:13px;font-weight:700;color:#495057;margin-top:4px;">Ai cucerit sectorul cyber-galactic!</p>
+            <div id="win-loot" style="display:flex;justify-content:center;gap:8px;margin:14px 0;flex-wrap:wrap;"></div>
+            <button id="btn-next-lvl" class="btn-advance fx-btn">Nivelul 2 / ???? ➔</button>
+        </div>
+    </div>
+
+    <!-- 5. MODAL SELECTOR NIVELE -->
+    <div id="modal-levels" class="modal-overlay">
+        <div class="modal-panel">
+            <div class="modal-head head-levels">
+                <div class="modal-heading">
+                    <span>🏁</span>
+                    <span id="levels-modal-title">Alege Nivelul • Nivel 1 / ????</span>
+                </div>
+                <button id="close-levels" class="btn-close-modal fx-btn">✕</button>
+            </div>
+            <div id="levels-matrix" class="levels-matrix"></div>
+        </div>
+    </div>
+
+    <!-- 6. MODAL QUESTURI (+3 NESTEMATE & QUEST BONUS +40 NESTEMATE) -->
+    <div id="modal-quests" class="modal-overlay">
+        <div class="modal-panel">
+            <div class="modal-head head-quests">
+                <div class="modal-heading" style="color:#fff;text-shadow:0 2px 0 #0f172a;">
+                    <span>📜</span>
+                    <span>Questuri Galactice & Bonus</span>
+                </div>
+                <button id="close-quests" class="btn-close-modal fx-btn">✕</button>
+            </div>
+            <div style="background:#fff3bf;border-bottom:2.5px solid #0f172a;padding:7px 14px;font-size:12px;font-weight:800;color:#5c3c00;">
+                🌌 Nestematele sunt rare! Questurile normale dau <b>+3 Nestemate</b>, iar Questul Bonus dă <b>+40 Nestemate</b>!
+            </div>
+            <div id="quests-scroll" class="quests-scroll"></div>
+        </div>
+    </div>
+
+    <!-- 7. MODAL SHOP EROI 2.5 (18 EROI LIVE + FILTRE 100% VIZIBILE) -->
+    <div id="modal-shop" class="modal-overlay">
+        <div class="modal-panel">
+            <div class="modal-head head-shop">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="modal-heading" style="color:#ffffff;text-shadow:0 2px 0 #0f172a;">
+                        <span>🛒</span>
+                        <span>Magazin Eroi 2.5 (18 Eroi)</span>
+                    </div>
+                    <button id="close-shop" class="btn-close-modal fx-btn">✕</button>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <button id="btn-shop-daily" class="nb-card nb-btn fx-btn bg-daily" style="padding:4px 10px;font-size:12px;height:33px;">
+                        🎁 Câștig Zilnic: +3 💠 / +25 🪙
+                    </button>
+                    <div style="display:flex;gap:6px;">
+                        <div class="nb-card bg-coins" style="padding:3px 9px;font-size:12.5px;display:flex;align-items:center;gap:4px;">
+                            <span class="coin-badge-dot" style="width:14px;height:14px;font-size:9px;">1</span>
+                            <span id="shop-coins-txt">0</span>
+                        </div>
+                        <div class="nb-card bg-diamonds" style="padding:3px 9px;font-size:12.5px;display:flex;align-items:center;gap:4px;">
+                            <span>💎</span>
+                            <span id="shop-diamonds-txt">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="shop-filters" class="shop-filter-bar">
+                <button class="filter-pill fx-btn selected" data-rar="all">Toate (18)</button>
+                <button class="filter-pill fx-btn" data-rar="comun">Comun</button>
+                <button class="filter-pill fx-btn f-rar" data-rar="rar">Rar</button>
+                <button class="filter-pill fx-btn f-epic" data-rar="epic">Epic</button>
+                <button class="filter-pill fx-btn f-mitic" data-rar="mitic">Mitic</button>
+                <button class="filter-pill fx-btn f-legendar" data-rar="legendar">🔥 Legendar</button>
+                <button class="filter-pill fx-btn f-divin" data-rar="divin">✨ Divin</button>
+            </div>
+            <div id="shop-grid" class="shop-grid"></div>
+        </div>
+    </div>
+
+    <!-- 8. MODAL PARKOUR PASS (2 RÂNDURI + 5 EROI EXCLUSIVI ÎN PREMIUM PASS) -->
+    <div id="modal-pass" class="modal-overlay">
+        <div class="modal-panel" style="max-width:740px;">
+            <div class="modal-head head-pass">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="modal-heading" style="color:#fff;text-shadow:0 2px 0 #0f172a;">
+                        <span>🏆</span>
+                        <span>Parkour Pass Galactic (5 Eroi Exclusivi!)</span>
+                    </div>
+                    <button id="close-pass" class="btn-close-modal fx-btn">✕</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <div class="pass-xp-track">
+                        <div id="pass-xp-fill" class="pass-xp-fill"></div>
+                        <div id="pass-xp-txt" class="pass-xp-txt">Tier 1 / 15 • 0 / 100 XP</div>
+                    </div>
+                    <button id="btn-unlock-prem" class="btn-prem-unlock fx-btn">👑 Deblochează Premium (3.000 Nestemate)</button>
+                </div>
+            </div>
+            <div class="pass-viewport">
+                <div id="pass-row-wrapper" class="pass-row-wrapper"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * PARKOUR ADVENTURE 2.5 - ULTRA-COSMIC EDITION
+ * ============================================================================
+ */
+
+function gemIconHTML(size = 18) {
+    return `
+        <span class="galactic-gem-wrap" style="width:${size + 3}px;height:${size + 3}px;">
+            <span class="galactic-gem-spark s1"></span>
+            <span class="galactic-gem-spark s2"></span>
+            <svg class="galactic-gem-svg" style="width:${size}px;height:${size}px;" viewBox="0 0 24 24">
+                <polygon points="12,1 23,12 12,23 1,12" fill="url(#rombCosmic)" stroke="#0f172a" stroke-width="2.5"/>
+                <polygon points="12,4 19,12 12,20 5,12" fill="rgba(255,255,255,0.22)"/>
+                <circle cx="9.5" cy="9" r="1.7" fill="#fff"/>
+                <circle cx="15" cy="14.5" r="1.2" fill="#ffe066"/>
+            </svg>
+        </span>
+    `;
+}
+
+// 1. EFECT RIPPLE DINAMIC PE ORICE BUTON 2.5
+document.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('.fx-btn');
+    if (!btn || btn.disabled || btn.classList.contains('cooldown') || btn.classList.contains('locked')) return;
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'btn-ripple-wave';
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = `${size}px`;
+    ripple.style.height = `${size}px`;
+    ripple.style.left = `${e.clientX - rect.left}px`;
+    ripple.style.top = `${e.clientY - rect.top}px`;
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 500);
+});
+
+// 2. SISTEM AUDIO WEB AUDIO API
+class AudioSynth {
+    constructor() {
+        this.muted = false;
+        this.ctx = null;
+    }
+
+    ensure() {
+        if (!this.ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    beep(freq, type, dur, vol = 0.14, endFreq = null) {
+        if (this.muted) return;
+        this.ensure();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, now + dur);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + dur);
+    }
+
+    playJump(isDouble = false) {
+        this.beep(isDouble ? 510 : 340, isDouble ? 'triangle' : 'sine', 0.17, 0.15, isDouble ? 890 : 660);
+    }
+    playBounce() { this.beep(240, 'sine', 0.28, 0.2, 1020); }
+    playCoin() {
+        this.beep(988, 'sine', 0.07, 0.13);
+        setTimeout(() => this.beep(1319, 'sine', 0.14, 0.13), 55);
+    }
+    playDiamond() {
+        this.beep(1046, 'triangle', 0.07, 0.15);
+        setTimeout(() => this.beep(1568, 'triangle', 0.18, 0.16), 75);
+    }
+    playGalactic() {
+        this.beep(880, 'sine', 0.08, 0.16);
+        setTimeout(() => this.beep(1175, 'triangle', 0.09, 0.16), 60);
+        setTimeout(() => this.beep(1760, 'sine', 0.22, 0.18), 120);
+    }
+    playStomp() {
+        this.beep(460, 'square', 0.08, 0.15, 840);
+        setTimeout(() => this.beep(920, 'sine', 0.12, 0.15), 65);
+    }
+    playHurt() { this.beep(230, 'sawtooth', 0.28, 0.16, 68); }
+    playClick() { this.beep(600, 'square', 0.06, 0.11, 880); }
+    playWin() {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+            setTimeout(() => this.beep(f, 'triangle', 0.2, 0.17), idx * 85);
+        });
+    }
+    playAbility(kind) {
+        if (kind === 'dash') this.beep(760, 'sawtooth', 0.2, 0.2, 1580);
+        else if (kind === 'slowmo') this.beep(580, 'sine', 0.35, 0.2, 210);
+        else if (kind === 'solar') this.beep(360, 'triangle', 0.28, 0.22, 960);
+        else this.beep(420, 'sine', 0.3, 0.2, 850);
+    }
+}
+
+const audio = new AudioSynth();
+
+// 3. CEI 18 EROI CYBER-GALACTICI DIN TOATE CELE 6 RARITĂȚI (INCLUSIV 5 EXCLUSIVI ÎN PREMIUM PASS)
+const HEROES_CATALOG = [
+    // COMUN (4)
+    { id: 'patrat_mov', name: 'Pătrat Mov', rarity: 'comun', tag: 'COMUN', price: 0, curr: 'free', desc: 'Eroul clasic mov cu zimți pe margini și puls energetic.', trail: '#9775fa' },
+    { id: 'cub_portocaliu', name: 'Cub Portocaliu', rarity: 'comun', tag: 'COMUN', price: 15, curr: 'coins', desc: 'Cub energic portocaliu înconjurat de scântei solare.', trail: '#ff922b' },
+    { id: 'sfera_verde', name: 'Sferă Verde', rarity: 'comun', tag: 'COMUN', price: 20, curr: 'coins', desc: 'Sferă energetică verde cu undă elastică și reflexie neon.', trail: '#51cf66' },
+    { id: 'triunghi_cian', name: 'Triunghi Cian', rarity: 'comun', tag: 'COMUN', price: 25, curr: 'coins', desc: 'Piramidă cyber-cian cu unde luminoase care pulsează ritmic.', trail: '#3bc9db' },
+
+    // RAR (3)
+    { id: 'slime_verde', name: 'Slime Verde', rarity: 'rar', tag: 'RAR', price: 35, curr: 'coins', desc: 'Formă gelatinoasă bio-luminescentă cu bule verzi plutitoare.', trail: '#20c997' },
+    { id: 'robot_albastru', name: 'Robot Albastru', rarity: 'rar', tag: 'RAR', price: 0, curr: 'pass', passTier: 3, desc: 'Unitate cybernetică cu scaner laser (Exclusiv Premium Pass Tier 3).', trail: '#339af0' },
+    { id: 'ninja_violet', name: 'Ninja Violet', rarity: 'rar', tag: 'RAR', price: 50, curr: 'coins', desc: 'Asasin galactic învăluit în fum violet și stele ninja rotative.', trail: '#845ef7' },
+
+    // EPIC (3)
+    { id: 'pisica_cyber', name: 'Pisica Cyber', rarity: 'epic', tag: 'EPIC', price: 75, curr: 'coins', gemPrice: 4, desc: 'Pisică cybernetică cu urechi holografice și unde sonice roz.', trail: '#f06595' },
+    { id: 'vrajitor_stelar', name: 'Vrăjitor Stelar', rarity: 'epic', tag: 'EPIC', price: 0, curr: 'pass', passTier: 6, desc: 'Magician cosmic cu rune orbitale (Exclusiv Premium Pass Tier 6).', trail: '#cc5de8' },
+    { id: 'fantoma_astrala', name: 'Fantoma Astrală', rarity: 'epic', tag: 'EPIC', price: 95, curr: 'coins', gemPrice: 6, desc: 'Spirit eteric din spațiul profund cu stele orbitale.', trail: '#748ffc' },
+
+    // MITIC (2)
+    { id: 'regele_cristalelor', name: 'Regele Cristalelor', rarity: 'mitic', tag: 'MITIC', price: 0, curr: 'pass', passTier: 9, desc: 'Monarh suprem din safir pur cu coroană regală (Exclusiv Premium Pass Tier 9).', trail: '#66d9e8' },
+    { id: 'entitatea_cosmica', name: 'Entitatea Cosmică', rarity: 'mitic', tag: 'MITIC', price: 160, curr: 'coins', gemPrice: 12, desc: 'Nucleu de galaxie vie cu stele interne și inele planetare.', trail: '#da77f2' },
+
+    // LEGENDAR (2)
+    { id: 'dragonul_solar', name: 'Dragonul Solar', rarity: 'legendar', tag: '🔥 LEGENDAR', price: 220, curr: 'coins', gemPrice: 18, desc: 'Bestie legendară din miezul unei stele, învăluită în erupții solare.', trail: '#ff922b' },
+    { id: 'samuraiul_cuantic', name: 'Samuraiul Cuantic', rarity: 'legendar', tag: '🔥 LEGENDAR', price: 250, curr: 'coins', gemPrice: 20, desc: 'Războinic cuantic cu lame de plasmă dublă și armură neon.', trail: '#fd7e14' },
+
+    // DIVIN (4 CU ABILITĂȚI ACTIVE)
+    {
+        id: 'zeul_fulgerului',
+        name: 'Zeul Fulgerului',
+        rarity: 'divin',
+        tag: '✨ DIVIN',
+        price: 290,
+        curr: 'coins',
+        gemPrice: 24,
+        desc: 'Stăpânul furtunii înconjurat de arcuri electrice de înaltă tensiune.',
+        abilityName: 'Flash Teleport',
+        abilityIcon: '⚡',
+        abilityType: 'dash',
+        cd: 4.0,
+        abilityDesc: 'Flash Teleport: Te teleportează fulgerător înainte cu undă electrică ce distruge țepii și intrușii (CD: 4s).',
+        trail: '#ffe066'
+    },
+    {
+        id: 'imparatul_timpului',
+        name: 'Împăratul Timpului',
+        rarity: 'divin',
+        tag: '✨ DIVIN',
+        price: 340,
+        curr: 'coins',
+        gemPrice: 28,
+        desc: 'Gardianul clepsidrei cosmice cu inele temporale aurii.',
+        abilityName: 'Chrono-Slow',
+        abilityIcon: '⏳',
+        abilityType: 'slowmo',
+        cd: 5.0,
+        abilityDesc: 'Chrono-Slow: Încetinește intrușii și platformele la 40% timp de 4s + oferă Triplu-Salt (CD: 5s).',
+        trail: '#3bc9db'
+    },
+    {
+        id: 'phoenix_solar',
+        name: 'Phoenix Solar',
+        rarity: 'divin',
+        tag: '✨ DIVIN',
+        price: 0,
+        curr: 'pass',
+        passTier: 12,
+        desc: 'Pasăre divină de foc cu aripi solare (Exclusiv Premium Pass Tier 12).',
+        abilityName: 'Solar Flight',
+        abilityIcon: '🔥',
+        abilityType: 'solar',
+        cd: 5.0,
+        abilityDesc: 'Solar Flight: Zbor solar 4s + Scut Solar pasiv care te salvează de intruși sau țepi (CD: 5s).',
+        trail: '#ff6b6b'
+    },
+    {
+        id: 'gardianul_gravitatiei',
+        name: 'Gardianul Gravitației',
+        rarity: 'divin',
+        tag: '✨ DIVIN',
+        price: 0,
+        curr: 'pass',
+        passTier: 15,
+        desc: 'Entitate divină supremă (Exclusiv Premium Pass Tier 15).',
+        abilityName: 'Zero-G + Magnet',
+        abilityIcon: '🌌',
+        abilityType: 'zerog',
+        cd: 4.5,
+        abilityDesc: 'Zero Gravity + Magnet: Plutești 5s fără gravitație și atragi toate monedele din jur (CD: 4.5s).',
+        trail: '#cc5de8'
+    }
+];
+
+// DESENARE EROU + EFECTE PASIVE / AURE ANIMATE
+function drawHeroWithEffects(ctx, heroId, x, y, w, h, dir = 1, t = 0, vy = 0, isShopPreview = false) {
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+
+    const blink = (Math.sin(t * 2.3) > 0.96);
+    const eyeY = Math.max(-2.5, Math.min(2.5, vy * 0.22));
+    const lookX = isShopPreview ? Math.sin(t * 1.8) * 2.2 : dir * 2.2;
+    const R = Math.max(w, h) * 0.68;
+
+    // 1. AURE & PARTICULE ANIMATE SPECIFICE FIECĂRUI CARACTER
+    if (heroId === 'patrat_mov') {
+        const pulse = 1 + Math.sin(t * 5) * 0.14;
+        ctx.strokeStyle = 'rgba(151, 117, 250, 0.55)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (heroId === 'cub_portocaliu') {
+        for (let i = 0; i < 5; i++) {
+            const a = t * 2.4 + i * 1.25;
+            const py = 12 - ((t * 22 + i * 9) % 28);
+            const px = Math.cos(a) * 16;
+            ctx.fillStyle = i % 2 === 0 ? '#ffd43b' : '#ff922b';
+            ctx.fillRect(px - 2, py - 2, 4, 4);
+        }
+    } else if (heroId === 'sfera_verde') {
+        const pulse = 1 + Math.sin(t * 6) * 0.16;
+        ctx.strokeStyle = 'rgba(81, 207, 102, 0.65)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (heroId === 'triunghi_cian') {
+        const wave = (t * 24) % 18;
+        ctx.strokeStyle = `rgba(59, 201, 219, ${Math.max(0, 0.85 - wave / 18)})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 2, R * 0.65 + wave, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (heroId === 'slime_verde') {
+        for (let i = 0; i < 4; i++) {
+            const bx = Math.sin(t * 3 + i * 2) * 16;
+            const by = 14 - ((t * 18 + i * 11) % 30);
+            ctx.fillStyle = 'rgba(99, 230, 190, 0.85)';
+            ctx.beginPath();
+            ctx.arc(bx, by, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (heroId === 'robot_albastru') {
+        ctx.strokeStyle = 'rgba(59, 201, 219, 0.75)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 1.05, t * 2, t * 2 + Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    } else if (heroId === 'ninja_violet') {
+        for (let i = 0; i < 3; i++) {
+            const ang = t * 4.5 + (i * Math.PI * 2) / 3;
+            const sx = Math.cos(ang) * (R * 1.05);
+            const sy = Math.sin(ang) * (R * 0.85);
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.rotate(t * 9);
+            ctx.fillStyle = '#b197fc';
+            ctx.fillRect(-4, -1.5, 8, 3);
+            ctx.fillRect(-1.5, -4, 3, 8);
+            ctx.restore();
+        }
+    } else if (heroId === 'pisica_cyber') {
+        const wave = (t * 20) % 16;
+        ctx.strokeStyle = `rgba(240, 101, 149, ${Math.max(0, 0.85 - wave / 16)})`;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 0.75 + wave, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (heroId === 'vrajitor_stelar') {
+        for (let i = 0; i < 4; i++) {
+            const ang = -t * 2.2 + (i * Math.PI) / 2;
+            const rx = Math.cos(ang) * (R * 1.06);
+            const ry = Math.sin(ang) * (R * 0.8);
+            ctx.fillStyle = '#ffd43b';
+            ctx.beginPath();
+            ctx.arc(rx, ry, 3.3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (heroId === 'fantoma_astrala') {
+        for (let i = 0; i < 4; i++) {
+            const ang = t * 3.2 + (i * Math.PI) / 2;
+            const fx = Math.cos(ang) * (R * 1.04);
+            const fy = Math.sin(ang) * (R * 0.85);
+            ctx.fillStyle = '#91a7ff';
+            ctx.beginPath();
+            ctx.arc(fx, fy, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (heroId === 'regele_cristalelor') {
+        for (let i = 0; i < 4; i++) {
+            const ang = t * 2.6 + (i * Math.PI) / 2;
+            const cx = Math.cos(ang) * (R * 1.08);
+            const cy = Math.sin(ang) * (R * 0.75);
+            ctx.fillStyle = '#66d9e8';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 5);
+            ctx.lineTo(cx + 4, cy);
+            ctx.lineTo(cx, cy + 5);
+            ctx.lineTo(cx - 4, cy);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+    } else if (heroId === 'entitatea_cosmica') {
+        ctx.strokeStyle = '#da77f2';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, R * 1.25, R * 0.42, Math.sin(t) * 0.35, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (heroId === 'dragonul_solar') {
+        for (let i = 0; i < 6; i++) {
+            const ang = t * 4.2 + (i * Math.PI) / 3;
+            const fx = Math.cos(ang) * (R * 1.12);
+            const fy = Math.sin(ang) * (R * 1.12);
+            ctx.fillStyle = i % 2 === 0 ? '#ff922b' : '#ffe066';
+            ctx.beginPath();
+            ctx.arc(fx, fy, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    } else if (heroId === 'samuraiul_cuantic') {
+        ctx.strokeStyle = '#ff922b';
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 1.12, t * 5, t * 5 + 1.4);
+        ctx.stroke();
+        ctx.strokeStyle = '#3bc9db';
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 1.12, t * 5 + Math.PI, t * 5 + Math.PI + 1.4);
+        ctx.stroke();
+    } else if (heroId === 'zeul_fulgerului') {
+        ctx.strokeStyle = '#ffe066';
+        ctx.lineWidth = 2.2;
+        for (let b = 0; b < 3; b++) {
+            const a = t * 6 + b * 2.1;
+            const x1 = Math.cos(a) * (w * 0.45);
+            const y1 = Math.sin(a) * (h * 0.45);
+            const x2 = Math.cos(a + 0.3) * (R * 1.18);
+            const y2 = Math.sin(a + 0.3) * (R * 1.18);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo((x1 + x2) / 2 + Math.sin(t * 30 + b) * 4, (y1 + y2) / 2 - 3);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+    } else if (heroId === 'imparatul_timpului') {
+        ctx.strokeStyle = '#ffd43b';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * 1.12, 0, Math.PI * 2);
+        ctx.stroke();
+        const handA = t * 4;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(handA) * R * 1.05, Math.sin(handA) * R * 1.05);
+        ctx.stroke();
+    } else if (heroId === 'phoenix_solar') {
+        const flap = Math.sin(t * 11) * 5;
+        ctx.fillStyle = '#ff922b';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.4, 0);
+        ctx.lineTo(-w * 0.85, -10 + flap);
+        ctx.lineTo(-w * 0.4, 9);
+        ctx.moveTo(w * 0.4, 0);
+        ctx.lineTo(w * 0.85, -10 + flap);
+        ctx.lineTo(w * 0.4, 9);
+        ctx.fill();
+        ctx.stroke();
+    } else if (heroId === 'gardianul_gravitatiei') {
+        for (let i = 0; i < 3; i++) {
+            const ang = t * 3.5 + (i * Math.PI * 2) / 3;
+            ctx.fillStyle = i === 0 ? '#ffd43b' : (i === 1 ? '#3bc9db' : '#f06595');
+            ctx.beginPath();
+            ctx.arc(Math.cos(ang) * R * 1.15, Math.sin(ang) * R * 0.65, 3.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // 2. CORPUL EROULUI
+    const hw = w / 2 - 2;
+    const hh = h / 2 - 2;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3.2;
+
+    if (heroId === 'patrat_mov') {
+        ctx.fillStyle = '#9775fa';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillRect(-hw - 3, -8, 3, 5);
+        ctx.fillRect(-hw - 3, 3, 3, 5);
+        ctx.fillRect(hw, -8, 3, 5);
+        ctx.fillRect(hw, 3, 3, 5);
+        drawHeroFace(ctx, lookX, -2 + eyeY, blink, true);
+    } else if (heroId === 'cub_portocaliu') {
+        ctx.fillStyle = '#ff922b';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 9);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, -1 + eyeY, blink, false);
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc(-9 + lookX, 5, 2.5, 0, Math.PI * 2);
+        ctx.arc(9 + lookX, 5, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (heroId === 'sfera_verde') {
+        ctx.fillStyle = '#51cf66';
+        ctx.beginPath();
+        ctx.arc(0, 0, hw + 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, -1 + eyeY, blink, true);
+    } else if (heroId === 'triunghi_cian') {
+        ctx.fillStyle = '#3bc9db';
+        ctx.beginPath();
+        ctx.moveTo(0, -hh - 2);
+        ctx.lineTo(hw + 2, hh);
+        ctx.lineTo(-hw - 2, hh);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX * 0.8, 3 + eyeY, blink, false);
+    } else if (heroId === 'slime_verde') {
+        ctx.fillStyle = '#20c997';
+        ctx.beginPath();
+        ctx.arc(-w * 0.25, -hh - 1, 5.5, 0, Math.PI * 2);
+        ctx.arc(w * 0.25, -hh - 1, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh + 2, hw * 2, hh * 2 - 2, [15, 15, 8, 8]);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 1 + eyeY, blink, false);
+    } else if (heroId === 'robot_albastru') {
+        ctx.beginPath();
+        ctx.moveTo(0, -hh);
+        ctx.lineTo(0, -hh - 7);
+        ctx.stroke();
+        ctx.fillStyle = '#fcc419';
+        ctx.beginPath();
+        ctx.arc(0, -hh - 8, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#339af0';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-hw + 4, -hh + 6, (hw - 4) * 2, 11);
+        ctx.fillStyle = '#66d9e8';
+        ctx.fillRect(-8 + lookX, -hh + 9 + eyeY, 5.5, blink ? 1.5 : 5.5);
+        ctx.fillRect(2.5 + lookX, -hh + 9 + eyeY, 5.5, blink ? 1.5 : 5.5);
+    } else if (heroId === 'ninja_violet') {
+        ctx.fillStyle = '#3b1d82';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 9);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#f06595';
+        ctx.fillRect(-hw + 1, -hh + 4, (hw - 1) * 2, 6);
+        ctx.strokeRect(-hw + 1, -hh + 4, (hw - 1) * 2, 6);
+        drawHeroFace(ctx, lookX, 2 + eyeY, blink, false);
+    } else if (heroId === 'pisica_cyber') {
+        ctx.fillStyle = '#f06595';
+        ctx.beginPath();
+        ctx.moveTo(-hw + 2, -hh + 2);
+        ctx.lineTo(-hw + 6, -hh - 8);
+        ctx.lineTo(-2, -hh + 1);
+        ctx.moveTo(hw - 2, -hh + 2);
+        ctx.lineTo(hw - 6, -hh - 8);
+        ctx.lineTo(2, -hh + 1);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh + 1, hw * 2, hh * 2 - 1, 11);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 1 + eyeY, blink, true);
+    } else if (heroId === 'vrajitor_stelar') {
+        ctx.fillStyle = '#5f3dc4';
+        ctx.beginPath();
+        ctx.moveTo(-hw - 2, -hh + 3);
+        ctx.lineTo(0, -hh - 12);
+        ctx.lineTo(hw + 2, -hh + 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#7950f2';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh + 2, hw * 2, hh * 2 - 2, 9);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 2 + eyeY, blink, false);
+    } else if (heroId === 'fantoma_astrala') {
+        ctx.fillStyle = '#5c7cfa';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, [15, 15, 6, 6]);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, -1 + eyeY, blink, false);
+    } else if (heroId === 'regele_cristalelor') {
+        ctx.fillStyle = '#ffd43b';
+        ctx.beginPath();
+        ctx.moveTo(-9, -hh + 1);
+        ctx.lineTo(-9, -hh - 7);
+        ctx.lineTo(0, -hh - 9);
+        ctx.lineTo(9, -hh - 7);
+        ctx.lineTo(9, -hh + 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#3bc9db';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh + 1, hw * 2, hh * 2 - 1, 9);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 1 + eyeY, blink, true);
+    } else if (heroId === 'entitatea_cosmica') {
+        ctx.fillStyle = '#140f2d';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffd43b';
+        ctx.fillRect(-9, -8, 2.5, 2.5);
+        ctx.fillRect(7, 6, 2.5, 2.5);
+        ctx.fillStyle = '#66d9e8';
+        ctx.beginPath();
+        ctx.arc(-6 + lookX, -1 + eyeY, 4.5, 0, Math.PI * 2);
+        ctx.arc(6 + lookX, -1 + eyeY, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (heroId === 'dragonul_solar') {
+        ctx.fillStyle = '#f76707';
+        ctx.beginPath();
+        ctx.moveTo(-10, -hh + 2);
+        ctx.lineTo(-14, -hh - 9);
+        ctx.lineTo(-3, -hh + 1);
+        ctx.moveTo(10, -hh + 2);
+        ctx.lineTo(14, -hh - 9);
+        ctx.lineTo(3, -hh + 1);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ff922b';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 9);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 0 + eyeY, blink, true);
+    } else if (heroId === 'samuraiul_cuantic') {
+        ctx.fillStyle = '#1e1b4b';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ff922b';
+        ctx.beginPath();
+        ctx.moveTo(-12, -hh + 1);
+        ctx.lineTo(0, -hh - 9);
+        ctx.lineTo(12, -hh + 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#3bc9db';
+        ctx.fillRect(-9 + lookX, -3 + eyeY, 7, 4);
+        ctx.fillRect(2 + lookX, -3 + eyeY, 7, 4);
+    } else if (heroId === 'zeul_fulgerului') {
+        ctx.fillStyle = '#fcc419';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 9);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(2, -hh - 7);
+        ctx.lineTo(-4, -hh + 3);
+        ctx.lineTo(1, -hh + 3);
+        ctx.lineTo(-2, -hh + 11);
+        ctx.lineTo(6, -hh);
+        ctx.lineTo(1, -hh);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 2 + eyeY, blink, false);
+    } else if (heroId === 'imparatul_timpului') {
+        ctx.fillStyle = '#0b7285';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 10);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 0 + eyeY, blink, false);
+    } else if (heroId === 'phoenix_solar') {
+        ctx.fillStyle = '#fa5252';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 10);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 0 + eyeY, blink, true);
+    } else if (heroId === 'gardianul_gravitatiei') {
+        ctx.fillStyle = '#5f3dc4';
+        ctx.beginPath();
+        ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 11);
+        ctx.fill();
+        ctx.stroke();
+        drawHeroFace(ctx, lookX, 0 + eyeY, blink, false);
+    }
+
+    ctx.restore();
+}
+
+function drawHeroFace(ctx, ox, oy, blink, hasSmile) {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.2;
+    const ry = blink ? 1.2 : 4.8;
+    ctx.beginPath();
+    ctx.ellipse(-6 + ox, oy, 4.3, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(6 + ox, oy, 4.3, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    if (!blink) {
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(-5.5 + ox * 1.35, oy, 2.1, 0, Math.PI * 2);
+        ctx.arc(6.5 + ox * 1.35, oy, 2.1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    if (hasSmile) {
+        ctx.fillStyle = '#c92a2a';
+        ctx.beginPath();
+        ctx.arc(ox * 0.6, oy + 7, 4.6, 0, Math.PI);
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+// 4. GENERATOR DE NIVELE CYBER-GALACTICE CU 4 TIPURI DE INTRUȘI
+function hashRng(seed) {
+    const v = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+    return v - Math.floor(v);
+}
+
+const INTRUDER_TYPES = ['drone_laser', 'magma_golem', 'plasma_specter', 'spring_sentinel'];
+
+function buildLevel(lvl) {
+    const platforms = [];
+    const coins = [];
+    const diamonds = [];
+    const spikes = [];
+    const bouncePads = [];
+    const intruders = [];
+    const beacons = [];
+
+    const diff = Math.min(1.0, (lvl - 1) / 35);
+    const segments = 6 + Math.min(14, Math.floor(Math.log2(lvl + 1) * 2.2));
+
+    platforms.push({ x: 0, y: 360, w: 260, h: 440, kind: 'cyber_solid' });
+    beacons.push({ x: 165, y: 360, color: '#3bc9db' });
+
+    let cx = 260;
+    let cy = 360;
+
+    for (let i = 0; i < segments; i++) {
+        const r1 = hashRng(lvl * 107 + i * 23);
+        const r2 = hashRng(lvl * 229 + i * 41);
+        const pat = Math.floor(r1 * 8);
+        const enemyKind = INTRUDER_TYPES[(lvl + i) % INTRUDER_TYPES.length];
+
+        const extraGap = Math.floor(diff * 44);
+        const shrinkW = Math.floor(diff * 42);
+        const spdMult = 1 + diff * 0.95;
+
+        if (lvl === 1 && i === 0) {
+            coins.push({ x: cx + 45, y: cy - 55, taken: false });
+            cx += 105;
+            const w = 240;
+            platforms.push({ x: cx, y: cy, w, h: 440, kind: 'cyber_solid' });
+            coins.push({ x: cx + 80, y: cy - 35, taken: false });
+            coins.push({ x: cx + 135, y: cy - 35, taken: false });
+            intruders.push({
+                kind: 'drone_laser',
+                x: cx + 135, y: cy - 38, baseY: cy - 38, w: 34, h: 32,
+                minX: cx + 18, maxX: cx + w - 52,
+                vx: 1.4, vy: 0, alive: true, phase: 0
+            });
+            cx += w;
+        } else if (pat === 0) {
+            const gap = Math.min(165, 95 + extraGap + Math.floor(r2 * 24));
+            cy = Math.max(170, Math.min(440, cy + (i % 2 === 0 ? -46 : 36)));
+            coins.push({ x: cx + gap / 2, y: cy - 45, taken: false });
+            cx += gap;
+            const w = Math.max(135, 225 - shrinkW);
+            platforms.push({ x: cx, y: cy, w, h: 440, kind: 'cyber_solid' });
+            if (i % 2 === 0) beacons.push({ x: cx + 24, y: cy, color: '#9775fa' });
+
+            if (w >= 165 && (lvl >= 2 || i > 1)) {
+                if (r2 > 0.42) {
+                    intruders.push({
+                        kind: enemyKind,
+                        x: cx + w * 0.5, y: cy - 34, baseY: cy - 34, w: 34, h: 34,
+                        minX: cx + 12, maxX: cx + w - 46,
+                        vx: (1.45 + diff * 1.4) * (i % 2 === 0 ? 1 : -1),
+                        vy: 0, alive: true, phase: i * 1.1
+                    });
+                } else {
+                    spikes.push({ x: cx + w / 2 - 15, y: cy, w: 30, broken: false });
+                }
+                coins.push({ x: cx + w / 2, y: cy - 70, taken: false });
+            }
+            cx += w;
+        } else if (pat === 1) {
+            bouncePads.push({ x: cx - 44, y: cy, w: 36, h: 14, squash: 0 });
+            const highY = Math.max(135, cy - 140);
+            coins.push({ x: cx + 35, y: highY - 30, taken: false });
+            coins.push({ x: cx + 75, y: highY - 45, taken: false });
+            cx += 120;
+            cy = highY;
+            const w = Math.max(135, 195 - shrinkW);
+            platforms.push({ x: cx, y: cy, w, h: 500, kind: 'cyber_solid' });
+            if (lvl >= 3 && w >= 150) {
+                intruders.push({
+                    kind: 'plasma_specter',
+                    x: cx + 40, y: cy - 38, baseY: cy - 38, w: 32, h: 32,
+                    minX: cx + 12, maxX: cx + w - 44,
+                    vx: 1.55 * spdMult, vy: 0, alive: true, phase: i
+                });
+            }
+            cx += w;
+        } else if (pat === 2) {
+            cx += 75;
+            platforms.push({
+                x: cx, y: cy, w: Math.max(88, 118 - Math.floor(diff * 24)), h: 26,
+                kind: 'cyber_move_h',
+                baseX: cx,
+                range: 115 + Math.floor(diff * 35),
+                speed: (1.4 + r2 * 0.6) * spdMult,
+                phase: i
+            });
+            coins.push({ x: cx + 55, y: cy - 40, taken: false });
+            cx += 245;
+            platforms.push({ x: cx, y: cy, w: 165, h: 440, kind: 'cyber_solid' });
+            cx += 165;
+        } else if (pat === 3 && lvl >= 2) {
+            const cnt = lvl >= 8 ? 3 : 2;
+            for (let f = 0; f < cnt; f++) {
+                cx += 85;
+                platforms.push({
+                    x: cx, y: cy, w: 92, h: 24,
+                    kind: 'cyber_fall',
+                    origY: cy,
+                    triggered: false,
+                    timer: 0,
+                    vy: 0
+                });
+                coins.push({ x: cx + 46, y: cy - 35, taken: false });
+                cx += 92;
+            }
+            cx += 85;
+            platforms.push({ x: cx, y: cy, w: 165, h: 440, kind: 'cyber_solid' });
+            cx += 165;
+        } else if (pat === 4 && lvl >= 3) {
+            cx += 80;
+            const liftY = Math.min(410, cy + 30);
+            platforms.push({
+                x: cx, y: liftY, w: 105, h: 26,
+                kind: 'cyber_move_v',
+                baseY: liftY,
+                range: 120,
+                speed: 1.5 * spdMult,
+                phase: i * 1.2
+            });
+            cy = liftY - 105;
+            cx += 155;
+            platforms.push({ x: cx, y: cy, w: 175, h: 500, kind: 'cyber_solid' });
+            cx += 175;
+        } else {
+            cx += 95 + Math.floor(diff * 24);
+            const w = 250;
+            platforms.push({ x: cx, y: cy, w, h: 440, kind: 'cyber_solid' });
+            if (lvl >= 2) {
+                spikes.push({ x: cx + 102, y: cy, w: 45, broken: false });
+            }
+            platforms.push({ x: cx + 75, y: cy - 112, w: 100, h: 22, kind: 'cyber_solid' });
+            intruders.push({
+                kind: 'spring_sentinel',
+                x: cx + 95, y: cy - 144, baseY: cy - 144, w: 30, h: 32,
+                minX: cx + 78, maxX: cx + 142,
+                vx: 1.3 * spdMult, vy: 0, alive: true, phase: i
+            });
+            coins.push({ x: cx + 105, y: cy - 156, taken: false });
+            coins.push({ x: cx + 145, y: cy - 156, taken: false });
+            cx += w;
+        }
+
+        if (i === Math.floor(segments / 2)) {
+            diamonds.push({ x: cx - 55, y: cy - 95, taken: false });
+        }
+    }
+
+    // CAPĂT EXTINS DE 340PX PENTRU ATERIZARE CONFORTABILĂ
+    cx += 95;
+    platforms.push({ x: cx, y: cy, w: 340, h: 480, kind: 'finish_zone' });
+    beacons.push({ x: cx + 65, y: cy, color: '#51cf66' });
+    beacons.push({ x: cx + 135, y: cy, color: '#3bc9db' });
+
+    return {
+        lvl,
+        platforms,
+        coins,
+        diamonds,
+        spikes,
+        bouncePads,
+        intruders,
+        beacons,
+        goal: { x: cx + 235, y: cy },
+        deathY: 760
+    };
+}
+
+// 5. ECONOMIE RARĂ NESTEMATE (3 PER QUEST & 40 QUEST BONUS) + 5 EROI EXCLUSIVI ÎN PREMIUM PASS
+const STORAGE_KEY = 'parkour_ultra_cosmic_v2_5';
+const PREMIUM_COST = 3000;
+const DAY_MILLIS = 24 * 60 * 60 * 1000;
+
+const STANDARD_QUESTS = [
+    { id: 'q_lvl5', name: 'Cuceritorul Galaxiei', sub: 'Completează 5 niveluri cyber-galactice.', key: 'levelsDone', target: 5, reward: 3 },
+    { id: 'q_int6', name: 'Vânătorul de Drone', sub: 'Elimină 6 intruși sărind pe capul lor.', key: 'intrudersKilled', target: 6, reward: 3 },
+    { id: 'q_coin100', name: 'Tezaurul Cosmic', sub: 'Colectează 100 de monede de aur.', key: 'coinsGot', target: 100, reward: 3 },
+    { id: 'q_jump60', name: 'Acrobatul Stelar', sub: 'Fă 60 de sărituri în niveluri.', key: 'jumpsMade', target: 60, reward: 3 }
+];
+
+const BONUS_QUEST_DEF = {
+    id: 'q_bonus_supreme',
+    name: '🌟 QUEST BONUS SUPREM (24h)',
+    sub: 'Completează 15 niveluri, elimină 15 intruși și adună 250 monede!',
+    targets: { levelsDone: 15, intrudersKilled: 15, coinsGot: 250 },
+    reward: 40
+};
+
+// 5 EROI EXCLUSIVI PLASAȚI DIRECT ÎN RÂNDUL DE SUS PREMIUM PASS!
+const SEASON_TIERS = Array.from({ length: 15 }, (_, idx) => {
+    const t = idx + 1;
+    let freeRew = { kind: 'coins', val: 15 + t * 3, icon: '🪙', text: `+${15 + t * 3} Monede` };
+    if (t === 4 || t === 11) freeRew = { kind: 'galactic', val: 3, icon: '💠', text: '+3 Nestemate' };
+    else if (t === 7) freeRew = { kind: 'diamonds', val: 3, icon: '💎', text: '+3 Diamante' };
+    else if (t === 10) freeRew = { kind: 'coins', val: 85, icon: '💰', text: '+85 Monede' };
+    else if (t === 15) freeRew = { kind: 'diamonds', val: 8, icon: '💎', text: '+8 Diamante' };
+
+    let premRew = { kind: 'coins', val: 45 + t * 6, icon: '💰', text: `+${45 + t * 6} Monede` };
+    if (t === 3) premRew = { kind: 'hero', heroId: 'robot_albastru', icon: '🤖', text: 'Robot Albastru (RAR)' };
+    else if (t === 6) premRew = { kind: 'hero', heroId: 'vrajitor_stelar', icon: '🧙', text: 'Vrăjitor Stelar (EPIC)' };
+    else if (t === 9) premRew = { kind: 'hero', heroId: 'regele_cristalelor', icon: '👑', text: 'Regele Cristalelor (MITIC)' };
+    else if (t === 12) premRew = { kind: 'hero', heroId: 'phoenix_solar', icon: '🔥', text: 'Phoenix Solar (DIVIN)' };
+    else if (t === 15) premRew = { kind: 'hero', heroId: 'gardianul_gravitatiei', icon: '🌌', text: 'Gardian Gravitație (DIVIN)' };
+    else if (t % 2 === 0) premRew = { kind: 'diamonds', val: 5, icon: '💎', text: '+5 Diamante' };
+
+    return { tier: t, freeRew, premRew };
+});
+
+const INITIAL_STATE = {
+    coins: 0,
+    diamonds: 0,
+    galactic: 0,
+    currentLevel: 1,
+    unlockedLevel: 1,
+    completedLevels: [],
+    ownedHeroes: ['patrat_mov'],
+    equippedHero: 'patrat_mov',
+    passXP: 0,
+    premiumUnlocked: false,
+    claimedFree: [],
+    claimedPrem: [],
+    lastDailyTs: 0,
+    lastBonusQuestTs: 0,
+    stats: { levelsDone: 0, intrudersKilled: 0, coinsGot: 0, jumpsMade: 0 },
+    bonusStats: { levelsDone: 0, intrudersKilled: 0, coinsGot: 0 }
+};
+
+let state = loadGameState();
+
+function loadGameState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            const merged = {
+                ...INITIAL_STATE,
+                ...parsed,
+                stats: { ...INITIAL_STATE.stats, ...(parsed.stats || {}) },
+                bonusStats: { ...INITIAL_STATE.bonusStats, ...(parsed.bonusStats || {}) }
+            };
+            if (!HEROES_CATALOG.some(h => h.id === merged.equippedHero)) {
+                merged.equippedHero = 'patrat_mov';
+            }
+            return merged;
+        }
+    } catch (e) {}
+    return JSON.parse(JSON.stringify(INITIAL_STATE));
+}
+
+function persistState() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+    syncHUD();
+}
+
+function addStatProgress(key, amount) {
+    state.stats[key] = (state.stats[key] || 0) + amount;
+    if (key in state.bonusStats) {
+        state.bonusStats[key] = (state.bonusStats[key] || 0) + amount;
+    }
+}
+
+// 6. ECRAN DE LOADING 2.5 DE 3 SECUNDE LA PORNIRE
+function runStartupLoading() {
+    const screen = document.getElementById('loading-screen');
+    const fill = document.getElementById('loading-progress-fill');
+    const label = document.getElementById('loading-progress-label');
+    const tipEl = document.getElementById('loading-tip');
+    const pCanvas = document.getElementById('loadingHeroPreview');
+    const pCtx = pCanvas.getContext('2d');
+    const bgCanvas = document.getElementById('loadingBgCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
+
+    bgCanvas.width = window.innerWidth;
+    bgCanvas.height = window.innerHeight;
+    const warpStars = Array.from({ length: 75 }, (_, i) => ({
+        x: (i * 173) % bgCanvas.width,
+        y: (i * 97) % bgCanvas.height,
+        r: 1.5 + (i % 3),
+        spd: 1.2 + (i % 4) * 0.7,
+        col: i % 3 === 0 ? '#3bc9db' : (i % 2 === 0 ? '#da77f2' : '#ffffff')
+    }));
+
+    const tips = [
+        '💡 Sfat: Explorează noua raritate LEGENDAR în Magazinul de Eroi 2.5!',
+        '🌌 Sfat: Questurile normale dau +3 Nestemate, iar Questul Bonus dă +40 Nestemate!',
+        '👑 Sfat: Deblochează Premium Pass cu 3.000 Nestemate pentru 5 Eroi Exclusivi!',
+        '🔄 Sfat: Apasă pe butonul 🔄 din colțul dreapta sus pentru Modul Orizontal!'
+    ];
+
+    const start = performance.now();
+    const duration = 3000;
+
+    function tick(now) {
+        const elapsed = now - start;
+        const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
+
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        for (const ws of warpStars) {
+            ws.x -= ws.spd * 2.2;
+            if (ws.x < 0) ws.x = bgCanvas.width;
+            bgCtx.fillStyle = ws.col;
+            bgCtx.fillRect(ws.x, ws.y, ws.r * 2.5, ws.r);
+        }
+
+        pCtx.clearRect(0, 0, 96, 96);
+        const bob = Math.sin(now * 0.007) * 5;
+        drawHeroWithEffects(pCtx, state.equippedHero || 'patrat_mov', 25, 27 + bob, 46, 46, 1, now * 0.001, bob, true);
+
+        fill.style.width = `${pct}%`;
+        label.textContent = `Încărcare Versiunea 2.5... ${pct}%`;
+
+        const tipIdx = Math.min(tips.length - 1, Math.floor((pct / 100) * tips.length));
+        tipEl.textContent = tips[tipIdx];
+
+        if (elapsed < duration) {
+            requestAnimationFrame(tick);
+        } else {
+            setTimeout(() => screen.classList.add('hidden'), 150);
+        }
+    }
+    requestAnimationFrame(tick);
+}
+
+// 7. CANVAS, CAMERA & MOD ORIZONTAL
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let cssLandscapeOn = false;
+let viewW = window.innerWidth;
+let viewH = window.innerHeight;
+
+function updateCanvasDimensions() {
+    if (cssLandscapeOn) {
+        viewW = window.innerHeight;
+        viewH = window.innerWidth;
+    } else {
+        viewW = window.innerWidth;
+        viewH = window.innerHeight;
+    }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = viewW * dpr;
+    canvas.height = viewH * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', updateCanvasDimensions);
+updateCanvasDimensions();
+
+let prevTouch = null;
+document.addEventListener('touchstart', (e) => {
+    if (!cssLandscapeOn || !e.touches.length) return;
+    prevTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+    if (!cssLandscapeOn || !prevTouch || !e.touches.length) return;
+    const t = e.touches[0];
+    const dx = t.clientX - prevTouch.x;
+    const dy = t.clientY - prevTouch.y;
+    prevTouch = { x: t.clientX, y: t.clientY };
+    const box = e.target.closest('.levels-matrix, .quests-scroll, .shop-grid, .pass-viewport, .shop-filter-bar');
+    if (box) {
+        box.scrollTop -= dx;
+        box.scrollLeft -= dy;
+    }
+}, { passive: true });
+
+// 8. FUNDAL GALACTIC, FIZICĂ & LOGICA DE JOC
+const cosmicStars = Array.from({ length: 115 }, (_, i) => ({
+    x: (i * 193) % 2600,
+    y: (i * 79) % 900,
+    r: (i % 3 === 0) ? 2.4 : 1.4,
+    phase: i * 0.9,
+    speed: 0.08 + (i % 4) * 0.05,
+    color: i % 5 === 0 ? '#ffe066' : (i % 3 === 0 ? '#66d9e8' : (i % 4 === 0 ? '#f783ac' : '#ffffff'))
+}));
+
+let shootingStars = [];
+let lvlData = null;
+let fxParticles = [];
+let shockRings = [];
+let popTexts = [];
+let cam = { x: 0, y: 0 };
+let shakeTimer = 0;
+let clock = 0;
+let isWon = false;
+let runCoins = 0;
+let runDiamonds = 0;
+
+const powerState = {
+    cdLeft: 0,
+    maxCd: 4,
+    activeLeft: 0,
+    kind: null,
+    invuln: 0,
+    solarShield: false
+};
+
+const heroObj = {
+    x: 65,
+    y: 260,
+    w: 38,
+    h: 38,
+    vx: 0,
+    vy: 0,
+    speed: 5.3,
+    jumpVel: -12.7,
+    grav: 0.58,
+    grounded: false,
+    coyote: 0,
+    jumpBuf: 0,
+    jumpsLeft: 2,
+    dir: 1,
+    sx: 1,
+    sy: 1,
+    ridePlat: null
+};
+
+const input = { left: false, right: false, jumpHeld: false };
+
+function requestJump() { heroObj.jumpBuf = 8; }
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = true;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        if (!input.jumpHeld) {
+            input.jumpHeld = true;
+            requestJump();
+        }
+    }
+    if (e.code === 'KeyE' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') useDivinePower();
+    if (e.code === 'KeyR') loadLevel(state.currentLevel);
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = false;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') input.jumpHeld = false;
+});
+
+function wirePadBtn(el, onPress, onRelease) {
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); el.classList.add('active'); onPress(); }, { passive: false });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); el.classList.remove('active'); if (onRelease) onRelease(); }, { passive: false });
+    el.addEventListener('touchcancel', () => { el.classList.remove('active'); if (onRelease) onRelease(); });
+    el.addEventListener('mousedown', () => { el.classList.add('active'); onPress(); });
+    el.addEventListener('mouseup', () => { el.classList.remove('active'); if (onRelease) onRelease(); });
+    el.addEventListener('mouseleave', () => { el.classList.remove('active'); if (onRelease) onRelease(); });
+}
+
+wirePadBtn(document.getElementById('btn-left'), () => { input.left = true; }, () => { input.left = false; });
+wirePadBtn(document.getElementById('btn-right'), () => { input.right = true; }, () => { input.right = false; });
+wirePadBtn(document.getElementById('btn-jump'), () => { requestJump(); }, null);
+wirePadBtn(document.getElementById('btn-ability'), () => { useDivinePower(); }, null);
+
+function currentHeroMeta() {
+    return HEROES_CATALOG.find(h => h.id === state.equippedHero) || HEROES_CATALOG[0];
+}
+
+function emitBurst(x, y, color, count = 10, spd = 4) {
+    for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = (0.3 + Math.random() * 0.7) * spd;
+        fxParticles.push({
+            x, y,
+            vx: Math.cos(a) * v,
+            vy: Math.sin(a) * v - 1.5,
+            size: 4 + Math.random() * 4.5,
+            color,
+            life: 1,
+            decay: 0.026 + Math.random() * 0.02
+        });
+    }
+}
+
+function emitRing(x, y, color = '#66d9e8', maxR = 44) {
+    shockRings.push({ x, y, r: 6, maxR, color, life: 1 });
+}
+
+function emitPopup(x, y, text, color = '#ffffff') {
+    popTexts.push({ x, y, text, color, life: 1 });
+}
+
+function useDivinePower() {
+    const meta = currentHeroMeta();
+    if (meta.rarity !== 'divin') return;
+    if (powerState.cdLeft > 0) {
+        notify(`Abilitatea se reîncarcă (${powerState.cdLeft.toFixed(1)}s)`);
+        return;
+    }
+
+    powerState.maxCd = meta.cd || 4;
+    powerState.cdLeft = powerState.maxCd;
+    powerState.kind = meta.abilityType;
+    audio.playAbility(meta.abilityType);
+
+    if (meta.abilityType === 'dash') {
+        powerState.activeLeft = 0.25;
+        powerState.invuln = 1.4;
+        const oldX = heroObj.x;
+        heroObj.x = Math.max(0, heroObj.x + heroObj.dir * 165);
+        heroObj.vy = -3;
+        const lo = Math.min(oldX, heroObj.x) - 30;
+        const hi = Math.max(oldX, heroObj.x) + heroObj.w + 30;
+
+        lvlData.spikes.forEach(s => {
+            if (!s.broken && s.x + s.w >= lo && s.x <= hi && Math.abs(s.y - (heroObj.y + heroObj.h)) < 90) {
+                s.broken = true;
+                emitBurst(s.x + s.w / 2, s.y - 8, '#ffe066', 14, 5);
+            }
+        });
+        lvlData.intruders.forEach(en => {
+            if (en.alive && en.x + en.w >= lo && en.x <= hi && Math.abs(en.y - heroObj.y) < 90) {
+                en.alive = false;
+                addStatProgress('intrudersKilled', 1);
+                emitBurst(en.x + en.w / 2, en.y + en.h / 2, '#ff6b6b', 16, 6);
+            }
+        });
+        persistState();
+        emitBurst(oldX + 19, heroObj.y + 19, '#ffe066', 18, 6);
+        emitBurst(heroObj.x + 19, heroObj.y + 19, '#ffffff', 22, 7);
+        emitPopup(heroObj.x + 20, heroObj.y - 14, '⚡ FLASH TELEPORT!', '#ffe066');
+    } else if (meta.abilityType === 'slowmo') {
+        powerState.activeLeft = 4.0;
+        heroObj.jumpsLeft = 3;
+        emitBurst(heroObj.x + 19, heroObj.y + 19, '#3bc9db', 24, 5);
+        emitPopup(heroObj.x + 20, heroObj.y - 14, '⏳ CHRONO-SLOW + 3x SALT!', '#66d9e8');
+    } else if (meta.abilityType === 'solar') {
+        powerState.activeLeft = 4.0;
+        powerState.invuln = 4.0;
+        powerState.solarShield = true;
+        heroObj.vy = -14.5;
+        heroObj.jumpsLeft = 2;
+        emitBurst(heroObj.x + 19, heroObj.y + 38, '#ff6b6b', 28, 7);
+        emitPopup(heroObj.x + 20, heroObj.y - 14, '🔥 SOLAR FLIGHT!', '#ff8787');
+    } else if (meta.abilityType === 'zerog') {
+        powerState.activeLeft = 5.0;
+        heroObj.vy = -5.5;
+        emitBurst(heroObj.x + 19, heroObj.y + 19, '#cc5de8', 25, 6);
+        emitPopup(heroObj.x + 20, heroObj.y - 14, '🌌 ZERO-G + MAGNET!', '#e599f7');
+    }
+}
+
+function loadLevel(lvlNum) {
+    const safe = Math.max(1, Math.min(999999999, Math.floor(Number(lvlNum) || 1)));
+    state.currentLevel = safe;
+    if (safe > state.unlockedLevel) state.unlockedLevel = safe;
+    persistState();
+
+    lvlData = buildLevel(safe);
+    isWon = false;
+    runCoins = 0;
+    runDiamonds = 0;
+    fxParticles = [];
+    shockRings = [];
+    popTexts = [];
+    shakeTimer = 0;
+
+    const meta = currentHeroMeta();
+    powerState.cdLeft = 0;
+    powerState.activeLeft = 0;
+    powerState.kind = null;
+    powerState.invuln = 0;
+    powerState.solarShield = (meta.id === 'phoenix_solar');
+
+    heroObj.x = 65;
+    heroObj.y = 260;
+    heroObj.vx = 0;
+    heroObj.vy = 0;
+    heroObj.grounded = false;
+    heroObj.jumpsLeft = (meta.id === 'imparatul_timpului') ? 3 : 2;
+    heroObj.sx = 1;
+    heroObj.sy = 1;
+    heroObj.ridePlat = null;
+    cam.x = 0;
+    cam.y = 0;
+
+    document.getElementById('victory-modal').classList.remove('open');
+    syncHUD();
+}
+
+function respawnPlayer(msg) {
+    audio.playHurt();
+    shakeTimer = 14;
+    const meta = currentHeroMeta();
+    emitBurst(heroObj.x + 19, heroObj.y + 19, meta.trail, 24, 6.5);
+    notify(`${msg} Reîncearcă! ⚡`);
+
+    powerState.activeLeft = 0;
+    powerState.kind = null;
+    powerState.invuln = 0.8;
+    powerState.solarShield = (meta.id === 'phoenix_solar');
+
+    heroObj.x = 65;
+    heroObj.y = 260;
+    heroObj.vx = 0;
+    heroObj.vy = 0;
+    heroObj.grounded = false;
+    heroObj.jumpsLeft = (meta.id === 'imparatul_timpului') ? 3 : 2;
+    heroObj.ridePlat = null;
+
+    lvlData.platforms.forEach(p => {
+        if (p.kind === 'cyber_fall') {
+            p.y = p.origY;
+            p.triggered = false;
+            p.timer = 0;
+            p.vy = 0;
+        }
+    });
+    lvlData.spikes.forEach(s => { s.broken = false; });
+    lvlData.intruders.forEach(en => { en.alive = true; });
+}
+
+function finishLevel() {
+    if (isWon) return;
+    isWon = true;
+    audio.playWin();
+
+    const lvlCoins = 10 + Math.min(15, Math.floor(state.currentLevel * 0.5));
+    const lvlXP = 70 + Math.min(90, state.currentLevel * 2);
+
+    state.coins += lvlCoins;
+    state.passXP += lvlXP;
+    addStatProgress('levelsDone', 1);
+    runCoins += lvlCoins;
+
+    if (!state.completedLevels.includes(state.currentLevel) && state.completedLevels.length < 5000) {
+        state.completedLevels.push(state.currentLevel);
+    }
+    if (state.currentLevel >= state.unlockedLevel) {
+        state.unlockedLevel = state.currentLevel + 1;
+    }
+    persistState();
+
+    const cyberColors = ['#3bc9db', '#9775fa', '#fcc419', '#51cf66', '#f06595'];
+    for (let i = 0; i < 45; i++) {
+        emitBurst(heroObj.x + 19, heroObj.y, cyberColors[i % cyberColors.length], 1, 7);
+    }
+
+    document.getElementById('win-heading').textContent =
+        `Nivelul ${state.currentLevel} Completat! • Nivel ${state.currentLevel} / ????`;
+    document.getElementById('win-loot').innerHTML = `
+        <div class="nb-card bg-coins" style="padding:5px 11px;font-size:13.5px;display:flex;align-items:center;gap:5px;">
+            <span class="coin-badge-dot">1</span>
+            <span>+${runCoins}</span>
+        </div>
+        <div class="nb-card" style="background:#d0bfff;padding:5px 11px;font-size:13.5px;">
+            🏆 +${lvlXP} XP
+        </div>
+        ${runDiamonds > 0 ? `<div class="nb-card bg-diamonds" style="padding:5px 11px;font-size:13.5px;">💎 +${runDiamonds}</div>` : ''}
+    `;
+    document.getElementById('btn-next-lvl').textContent = `Nivelul ${state.currentLevel + 1} / ???? ➔`;
+
+    setTimeout(() => {
+        document.getElementById('victory-modal').classList.add('open');
+    }, 380);
+}
+
+function overlap(ax, ay, aw, ah, bx, by, bw, bh) {
+    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function stepSimulation() {
+    if (!lvlData || isWon) return;
+    clock += 0.016;
+    if (shakeTimer > 0) shakeTimer--;
+
+    if (Math.random() < 0.025) {
+        shootingStars.push({
+            x: cam.x + viewW * (0.3 + Math.random() * 0.8),
+            y: Math.random() * viewH * 0.4,
+            vx: -11 - Math.random() * 5,
+            vy: 4 + Math.random() * 3,
+            life: 1
+        });
+    }
+
+    if (powerState.cdLeft > 0) powerState.cdLeft = Math.max(0, powerState.cdLeft - 0.016);
+    if (powerState.invuln > 0) powerState.invuln = Math.max(0, powerState.invuln - 0.016);
+    if (powerState.activeLeft > 0) {
+        powerState.activeLeft = Math.max(0, powerState.activeLeft - 0.016);
+        if (powerState.activeLeft === 0) powerState.kind = null;
+    }
+    syncAbilityBtn();
+    syncEffectsStrip();
+
+    const tScale = (powerState.kind === 'slowmo') ? 0.4 : 1.0;
+
+    lvlData.platforms.forEach(p => {
+        p.dx = 0;
+        p.dy = 0;
+        if (p.kind === 'cyber_move_h') {
+            const old = p.x;
+            p.x = p.baseX + (Math.sin(clock * p.speed * tScale + p.phase) + 1) * 0.5 * p.range;
+            p.dx = p.x - old;
+        } else if (p.kind === 'cyber_move_v') {
+            const old = p.y;
+            p.y = p.baseY - (Math.sin(clock * p.speed * tScale + p.phase) + 1) * 0.5 * p.range;
+            p.dy = p.y - old;
+        } else if (p.kind === 'cyber_fall' && p.triggered) {
+            p.timer += tScale;
+            if (p.timer > 22) {
+                p.vy += 0.45 * tScale;
+                p.y += p.vy * tScale;
+                p.dy = p.vy * tScale;
+            }
+        }
+    });
+
+    if (heroObj.grounded && heroObj.ridePlat) {
+        heroObj.x += heroObj.ridePlat.dx || 0;
+        heroObj.y += heroObj.ridePlat.dy || 0;
+    }
+
+    for (const en of lvlData.intruders) {
+        if (!en.alive) continue;
+        en.x += en.vx * tScale;
+        if (en.x <= en.minX) { en.x = en.minX; en.vx = Math.abs(en.vx); }
+        else if (en.x >= en.maxX) { en.x = en.maxX; en.vx = -Math.abs(en.vx); }
+
+        if (en.kind === 'drone_laser') en.y = en.baseY - 6 + Math.sin(clock * 5 + en.phase) * 5;
+        else if (en.kind === 'plasma_specter') en.y = en.baseY - 10 + Math.sin(clock * 4 + en.phase) * 12;
+        else if (en.kind === 'spring_sentinel') en.y = en.baseY - Math.abs(Math.sin(clock * 4.5 * tScale + en.phase)) * 22;
+        else en.y = en.baseY;
+    }
+
+    if (input.left) {
+        heroObj.vx = -heroObj.speed;
+        heroObj.dir = -1;
+    } else if (input.right) {
+        heroObj.vx = heroObj.speed;
+        heroObj.dir = 1;
+    } else {
+        heroObj.vx *= 0.72;
+        if (Math.abs(heroObj.vx) < 0.2) heroObj.vx = 0;
+    }
+
+    const meta = currentHeroMeta();
+    if (heroObj.grounded && Math.abs(heroObj.vx) > 2.2 && Math.random() < 0.65) {
+        fxParticles.push({
+            x: heroObj.x + heroObj.w / 2 - heroObj.dir * 10,
+            y: heroObj.y + heroObj.h - 2,
+            vx: -heroObj.dir * (1.4 + Math.random() * 1.8),
+            vy: -0.9 - Math.random() * 1.4,
+            size: 4 + Math.random() * 3,
+            color: meta.trail,
+            life: 0.9,
+            decay: 0.045
+        });
+    }
+
+    heroObj.x += heroObj.vx;
+    if (heroObj.x < 0) heroObj.x = 0;
+
+    const maxJumps = (meta.id === 'imparatul_timpului') ? 3 : 2;
+    if (heroObj.grounded) {
+        heroObj.coyote = 7;
+        heroObj.jumpsLeft = maxJumps;
+    } else if (heroObj.coyote > 0) {
+        heroObj.coyote--;
+    }
+
+    if (heroObj.jumpBuf > 0) {
+        heroObj.jumpBuf--;
+        if (heroObj.coyote > 0) {
+            heroObj.vy = heroObj.jumpVel;
+            heroObj.grounded = false;
+            heroObj.coyote = 0;
+            heroObj.jumpBuf = 0;
+            heroObj.jumpsLeft = maxJumps - 1;
+            heroObj.sx = 0.72;
+            heroObj.sy = 1.3;
+            addStatProgress('jumpsMade', 1);
+            audio.playJump(false);
+            emitBurst(heroObj.x + 19, heroObj.y + 38, meta.trail, 12, 3.6);
+            emitRing(heroObj.x + 19, heroObj.y + 38, meta.trail, 42);
+        } else if (heroObj.jumpsLeft > 0) {
+            heroObj.vy = heroObj.jumpVel * 0.92;
+            heroObj.jumpsLeft--;
+            heroObj.jumpBuf = 0;
+            heroObj.sx = 0.75;
+            heroObj.sy = 1.28;
+            addStatProgress('jumpsMade', 1);
+            audio.playJump(true);
+            emitBurst(heroObj.x + 19, heroObj.y + 38, meta.trail, 16, 4.4);
+            emitRing(heroObj.x + 19, heroObj.y + 38, '#66d9e8', 48);
+        }
+    }
+
+    let gForce = heroObj.grav;
+    if (powerState.kind === 'zerog' || powerState.kind === 'solar') {
+        gForce = 0.06;
+        if (input.jumpHeld) heroObj.vy = Math.max(heroObj.vy - 0.65, -6.0);
+        if (Math.random() < 0.5) {
+            emitBurst(heroObj.x + 19, heroObj.y + 38, powerState.kind === 'solar' ? '#ff922b' : '#cc5de8', 2, 2.2);
+        }
+    }
+
+    heroObj.vy = Math.min(15, heroObj.vy + gForce);
+    const prevGrounded = heroObj.grounded;
+    heroObj.grounded = false;
+    heroObj.ridePlat = null;
+    heroObj.y += heroObj.vy;
+
+    for (const p of lvlData.platforms) {
+        if (p.kind === 'cyber_fall' && p.timer > 55) continue;
+        if (overlap(heroObj.x, heroObj.y, heroObj.w, heroObj.h, p.x, p.y, p.w, p.h)) {
+            if (heroObj.vy >= 0) {
+                heroObj.y = p.y - heroObj.h;
+                if (!prevGrounded && heroObj.vy > 3.5) {
+                    heroObj.sx = 1.28;
+                    heroObj.sy = 0.74;
+                    emitBurst(heroObj.x + 19, heroObj.y + 38, meta.trail, 9, 2.8);
+                }
+                heroObj.vy = 0;
+                heroObj.grounded = true;
+                heroObj.ridePlat = p;
+                if (p.kind === 'cyber_fall') p.triggered = true;
+            } else {
+                heroObj.y = p.y + p.h;
+                heroObj.vy = 0;
+            }
+        }
+    }
+
+    heroObj.sx += (1 - heroObj.sx) * 0.2;
+    heroObj.sy += (1 - heroObj.sy) * 0.2;
+
+    for (const en of lvlData.intruders) {
+        if (!en.alive) continue;
+        if (overlap(heroObj.x + 3, heroObj.y + 3, heroObj.w - 6, heroObj.h - 3, en.x, en.y, en.w, en.h)) {
+            const prevBot = (heroObj.y - heroObj.vy) + heroObj.h;
+            if (heroObj.vy > 0 && prevBot <= en.y + 16) {
+                en.alive = false;
+                heroObj.vy = -11.2;
+                heroObj.jumpsLeft = maxJumps - 1;
+                state.coins += 2;
+                addStatProgress('intrudersKilled', 1);
+                runCoins += 2;
+                persistState();
+                audio.playStomp();
+                emitBurst(en.x + 17, en.y + 17, '#3bc9db', 20, 5.5);
+                emitRing(en.x + 17, en.y + 17, '#ffd43b', 46);
+                emitPopup(en.x + 17, en.y - 10, '+2 🪙', '#ffd43b');
+            } else {
+                if (powerState.invuln > 0) continue;
+                if (powerState.solarShield) {
+                    powerState.solarShield = false;
+                    powerState.invuln = 1.3;
+                    en.alive = false;
+                    heroObj.vy = -12;
+                    audio.playAbility('solar');
+                    emitBurst(en.x + 17, en.y + 17, '#ff6b6b', 22, 6);
+                    notify('🔥 Scutul Solar a pulverizat intrusul!');
+                    continue;
+                }
+                respawnPlayer('Ai fost lovit de un intrus cyber!');
+                return;
+            }
+        }
+    }
+
+    for (const bp of lvlData.bouncePads) {
+        if (bp.squash > 0) bp.squash--;
+        if (overlap(heroObj.x, heroObj.y, heroObj.w, heroObj.h, bp.x, bp.y - bp.h, bp.w, bp.h)) {
+            heroObj.vy = -17.5;
+            heroObj.grounded = false;
+            heroObj.jumpsLeft = maxJumps - 1;
+            bp.squash = 10;
+            heroObj.sx = 0.72;
+            heroObj.sy = 1.32;
+            audio.playBounce();
+            emitBurst(bp.x + bp.w / 2, bp.y - bp.h, '#fcc419', 12, 4);
+        }
+    }
+
+    for (const sp of lvlData.spikes) {
+        if (sp.broken) continue;
+        if (overlap(heroObj.x + 5, heroObj.y + 4, heroObj.w - 10, heroObj.h - 4, sp.x + 4, sp.y - 16, sp.w - 8, 16)) {
+            if (powerState.invuln > 0) continue;
+            if (powerState.solarShield) {
+                powerState.solarShield = false;
+                powerState.invuln = 1.2;
+                heroObj.vy = -13.5;
+                audio.playAbility('solar');
+                emitBurst(heroObj.x + 19, heroObj.y + 19, '#ff6b6b', 25, 6);
+                notify('🔥 Scutul Solar te-a protejat de țepi!');
+                continue;
+            }
+            respawnPlayer('Ai atins țepii energetici!');
+            return;
+        }
+    }
+
+    for (const c of lvlData.coins) {
+        if (c.taken) continue;
+        const d = Math.hypot((heroObj.x + 19) - c.x, (heroObj.y + 19) - c.y);
+        if (powerState.kind === 'zerog' && d < 280) {
+            c.x += ((heroObj.x + 19) - c.x) * 0.16;
+            c.y += ((heroObj.y + 19) - c.y) * 0.16;
+        }
+        if (d < 30) {
+            c.taken = true;
+            state.coins += 1;
+            state.passXP += 5;
+            addStatProgress('coinsGot', 1);
+            runCoins += 1;
+            persistState();
+            audio.playCoin();
+            emitBurst(c.x, c.y, '#ffd43b', 8, 3);
+            emitPopup(c.x, c.y - 10, '+1', '#ffd43b');
+        }
+    }
+
+    for (const dm of lvlData.diamonds) {
+        if (!dm.taken && Math.hypot((heroObj.x + 19) - dm.x, (heroObj.y + 19) - dm.y) < 32) {
+            dm.taken = true;
+            state.diamonds += 1;
+            state.passXP += 25;
+            runDiamonds += 1;
+            persistState();
+            audio.playDiamond();
+            emitBurst(dm.x, dm.y, '#3bc9db', 14, 4);
+            emitPopup(dm.x, dm.y - 12, '+1 💎', '#66d9e8');
+        }
+    }
+
+    const g = lvlData.goal;
+    if (overlap(heroObj.x, heroObj.y, heroObj.w, heroObj.h, g.x - 16, g.y - 82, 44, 82)) {
+        finishLevel();
+        return;
+    }
+
+    if (heroObj.y > lvlData.deathY) {
+        respawnPlayer('Ai căzut în vidul cosmic!');
+        return;
+    }
+
+    const targetCamX = heroObj.x - viewW * 0.34;
+    const targetCamY = heroObj.y - viewH * 0.56;
+    cam.x += (Math.max(0, targetCamX) - cam.x) * 0.12;
+    cam.y += (Math.max(-220, Math.min(200, targetCamY)) - cam.y) * 0.1;
+}
+
+// 9. RANDARE SCENĂ CYBER-GALACTICĂ & INTRUȘI 2.5
+function renderCosmicBackdrop() {
+    const neb1 = ctx.createRadialGradient(viewW * 0.25, viewH * 0.28, 20, viewW * 0.25, viewH * 0.28, viewW * 0.45);
+    neb1.addColorStop(0, 'rgba(132, 94, 247, 0.24)');
+    neb1.addColorStop(1, 'rgba(132, 94, 247, 0)');
+    ctx.fillStyle = neb1;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    const neb2 = ctx.createRadialGradient(viewW * 0.78, viewH * 0.22, 15, viewW * 0.78, viewH * 0.22, viewW * 0.38);
+    neb2.addColorStop(0, 'rgba(59, 201, 219, 0.22)');
+    neb2.addColorStop(1, 'rgba(59, 201, 219, 0)');
+    ctx.fillStyle = neb2;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    const px = viewW * 0.82 - (cam.x * 0.03) % (viewW * 0.5);
+    const py = viewH * 0.22;
+    ctx.save();
+    ctx.fillStyle = '#3b28cc';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(px, py, 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = '#66d9e8';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(px, py, 58, 12, -0.28, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    cosmicStars.forEach(st => {
+        const sx = ((st.x - cam.x * st.speed) % (viewW + 80) + (viewW + 80)) % (viewW + 80);
+        const sy = st.y % (viewH * 0.78);
+        ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(clock * 2.6 + st.phase));
+        ctx.fillStyle = st.color;
+        ctx.beginPath();
+        ctx.arc(sx, sy, st.r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+        const ss = shootingStars[i];
+        ss.x += ss.vx;
+        ss.y += ss.vy;
+        ss.life -= 0.025;
+        if (ss.life <= 0) { shootingStars.splice(i, 1); continue; }
+        const sx = ss.x - cam.x * 0.3;
+        ctx.save();
+        ctx.globalAlpha = ss.life;
+        ctx.strokeStyle = '#99e9f2';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(sx, ss.y);
+        ctx.lineTo(sx - ss.vx * 3, ss.y - ss.vy * 3);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function renderCyberIntruder(en) {
+    ctx.save();
+    ctx.translate(en.x + en.w / 2, en.y + en.h / 2);
+    const dir = en.vx >= 0 ? 1 : -1;
+
+    if (en.kind === 'drone_laser') {
+        const beamH = 16 + Math.sin(clock * 14) * 5;
+        const grad = ctx.createLinearGradient(0, en.h / 2, 0, en.h / 2 + beamH);
+        grad.addColorStop(0, 'rgba(250, 82, 82, 0.85)');
+        grad.addColorStop(1, 'rgba(250, 82, 82, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(-8, en.h / 2 - 2);
+        ctx.lineTo(8, en.h / 2 - 2);
+        ctx.lineTo(14, en.h / 2 + beamH);
+        ctx.lineTo(-14, en.h / 2 + beamH);
+        ctx.closePath();
+        ctx.fill();
+
+        const rotW = 14 + Math.sin(clock * 35) * 10;
+        ctx.strokeStyle = '#66d9e8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-rotW, -en.h / 2 - 4);
+        ctx.lineTo(rotW, -en.h / 2 - 4);
+        ctx.stroke();
+
+        ctx.fillStyle = '#343a40';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(-en.w / 2, -en.h / 2 + 2, en.w, en.h - 4, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ff2a2a';
+        ctx.fillRect(-10 + dir * 2, -3, 20, 7);
+    } else if (en.kind === 'magma_golem') {
+        const stomp = Math.abs(Math.sin(clock * 8 + en.x * 0.04)) * 2.5;
+        ctx.translate(0, -stomp);
+
+        ctx.fillStyle = '#2b2d42';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(-en.w / 2, -en.h / 2 + 3, en.w, en.h - 3, 7);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ff922b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-10, 6);
+        ctx.lineTo(-3, 1);
+        ctx.lineTo(4, 8);
+        ctx.lineTo(11, 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffd43b';
+        ctx.fillRect(-9 + dir * 2, -7, 6, 5);
+        ctx.fillRect(3 + dir * 2, -7, 6, 5);
+    } else if (en.kind === 'plasma_specter') {
+        ctx.fillStyle = 'rgba(204, 93, 232, 0.35)';
+        ctx.beginPath();
+        ctx.arc(0, 0, en.w * 0.68, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#9775fa';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, en.w * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-4 + dir * 2, -2, 3.5, 0, Math.PI * 2);
+        ctx.arc(5 + dir * 2, -2, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = '#fcc419';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(-en.w / 2 + 2, -en.h / 2, en.w - 4, en.h - 6, 9);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#adb5bd';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-6, en.h / 2 - 6);
+        ctx.lineTo(6, en.h / 2 - 3);
+        ctx.lineTo(-6, en.h / 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-8 + dir * 2, -6, 16, 6);
+        ctx.fillStyle = '#51cf66';
+        ctx.fillRect(-6 + dir * 3, -5, 4, 4);
+        ctx.fillRect(2 + dir * 3, -5, 4, 4);
+    }
+
+    ctx.restore();
+}
+
+function drawFrame() {
+    ctx.clearRect(0, 0, viewW, viewH);
+    renderCosmicBackdrop();
+
+    if (powerState.kind === 'slowmo') {
+        ctx.fillStyle = 'rgba(59, 201, 219, 0.14)';
+        ctx.fillRect(0, 0, viewW, viewH);
+    }
+
+    if (!lvlData) return;
+
+    ctx.save();
+    const sxOff = shakeTimer > 0 ? (Math.random() - 0.5) * 7 : 0;
+    const syOff = shakeTimer > 0 ? (Math.random() - 0.5) * 7 : 0;
+    ctx.translate(-Math.round(cam.x) + sxOff, -Math.round(cam.y) + syOff);
+
+    for (const b of lvlData.beacons) {
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.fillStyle = '#1e1b4b';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.fillRect(-4, -34, 8, 34);
+        ctx.strokeRect(-4, -34, 8, 34);
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(0, -38, 6 + Math.sin(clock * 5) * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    for (const p of lvlData.platforms) {
+        if (p.kind === 'cyber_fall' && p.timer > 55) continue;
+        ctx.save();
+        if (p.kind === 'cyber_fall' && p.triggered) ctx.translate((Math.random() - 0.5) * 4, 0);
+
+        if (p.kind === 'cyber_solid') {
+            ctx.fillStyle = '#1c2563';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = '#3bc9db';
+            ctx.fillRect(p.x, p.y, p.w, 10);
+            // Circuite energetice luminoase
+            ctx.strokeStyle = 'rgba(102, 217, 232, 0.25)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(p.x + 14, p.y + 24);
+            ctx.lineTo(p.x + p.w - 14, p.y + 24);
+            ctx.stroke();
+        } else if (p.kind === 'finish_zone') {
+            ctx.fillStyle = '#14532d';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = '#51cf66';
+            ctx.fillRect(p.x, p.y, p.w, 10);
+        } else if (p.kind === 'cyber_move_h' || p.kind === 'cyber_move_v') {
+            ctx.fillStyle = '#4c1d95';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = '#da77f2';
+            ctx.fillRect(p.x, p.y, p.w, 8);
+        } else {
+            ctx.fillStyle = '#9a3412';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = '#ff922b';
+            ctx.fillRect(p.x, p.y, p.w, 8);
+        }
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3.5;
+        ctx.strokeRect(p.x, p.y, p.w, p.h);
+        ctx.restore();
+    }
+
+    for (const sp of lvlData.spikes) {
+        if (sp.broken) continue;
+        const cnt = Math.floor(sp.w / 15);
+        const step = sp.w / cnt;
+        for (let i = 0; i < cnt; i++) {
+            const sx = sp.x + i * step;
+            ctx.fillStyle = '#fa5252';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2.8;
+            ctx.beginPath();
+            ctx.moveTo(sx, sp.y);
+            ctx.lineTo(sx + step / 2, sp.y - 18);
+            ctx.lineTo(sx + step, sp.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
+
+    for (const en of lvlData.intruders) {
+        if (en.alive) renderCyberIntruder(en);
+    }
+
+    for (const bp of lvlData.bouncePads) {
+        const sq = bp.squash > 0 ? 5 : 0;
+        ctx.fillStyle = '#fcc419';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(bp.x, bp.y - bp.h + sq, bp.w, bp.h - sq, [6, 6, 0, 0]);
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    for (const c of lvlData.coins) {
+        if (c.taken) continue;
+        const bob = Math.sin(clock * 5 + c.x * 0.05) * 4;
+        ctx.save();
+        ctx.translate(c.x, c.y + bob);
+        ctx.fillStyle = '#ffd43b';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#e67700';
+        ctx.font = '900 13px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('1', 0, 1);
+        ctx.restore();
+    }
+
+    for (const dm of lvlData.diamonds) {
+        if (dm.taken) continue;
+        const bob = Math.sin(clock * 4.5 + dm.x * 0.05) * 5;
+        ctx.save();
+        ctx.translate(dm.x, dm.y + bob);
+        ctx.fillStyle = '#3bc9db';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        ctx.moveTo(0, -14);
+        ctx.lineTo(13, -3);
+        ctx.lineTo(0, 14);
+        ctx.lineTo(-13, -3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    const g = lvlData.goal;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(102, 217, 232, 0.65)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(g.x + 15, g.y, 70, Math.PI, 0, false);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.fillRect(g.x - 3, g.y - 84, 6, 84);
+    ctx.strokeRect(g.x - 3, g.y - 84, 6, 84);
+
+    const wave = Math.sin(clock * 7) * 3;
+    ctx.fillStyle = '#51cf66';
+    ctx.beginPath();
+    ctx.moveTo(g.x + 3, g.y - 82);
+    ctx.lineTo(g.x + 48, g.y - 66 + wave);
+    ctx.lineTo(g.x + 3, g.y - 48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fcc419';
+    ctx.beginPath();
+    ctx.arc(g.x, g.y - 86, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    for (let i = shockRings.length - 1; i >= 0; i--) {
+        const sr = shockRings[i];
+        sr.r += (sr.maxR - sr.r) * 0.22;
+        sr.life -= 0.06;
+        if (sr.life <= 0) { shockRings.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, sr.life);
+        ctx.strokeStyle = sr.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(sr.x, sr.y, sr.r, sr.r * 0.35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(heroObj.x + heroObj.w / 2, heroObj.y + heroObj.h);
+    ctx.scale(heroObj.sx, heroObj.sy);
+
+    if (Math.abs(heroObj.vx) > 3.2) {
+        ctx.strokeStyle = 'rgba(102, 217, 232, 0.8)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-heroObj.dir * 24, -heroObj.h * 0.75);
+        ctx.lineTo(-heroObj.dir * 40, -heroObj.h * 0.75);
+        ctx.moveTo(-heroObj.dir * 22, -heroObj.h * 0.35);
+        ctx.lineTo(-heroObj.dir * 36, -heroObj.h * 0.35);
+        ctx.stroke();
+    }
+
+    if (powerState.solarShield) {
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(0, -heroObj.h / 2, heroObj.w * 0.8, clock * 2, clock * 2 + Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    drawHeroWithEffects(ctx, state.equippedHero, -heroObj.w / 2, -heroObj.h, heroObj.w, heroObj.h, heroObj.dir, clock, heroObj.vy, false);
+    ctx.restore();
+
+    for (let i = fxParticles.length - 1; i >= 0; i--) {
+        const pt = fxParticles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vy += 0.14;
+        pt.life -= pt.decay;
+        if (pt.life <= 0) { fxParticles.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, pt.life);
+        ctx.fillStyle = pt.color;
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+        ctx.strokeRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+        ctx.restore();
+    }
+
+    for (let i = popTexts.length - 1; i >= 0; i--) {
+        const ft = popTexts[i];
+        ft.y -= 1.1;
+        ft.life -= 0.025;
+        if (ft.life <= 0) { popTexts.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.life);
+        ctx.font = '900 15px Fredoka, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText(ft.text, ft.x + 1.5, ft.y + 1.5);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+
+    ctx.restore();
+}
+
+// 10. ANIMAȚIE LIVE 60FPS PENTRU HUD BADGE, SHOP ȘI PREMIUM PASS!
+let liveMiniCanvases = [];
+const hudHeroCanvas = document.getElementById('hudHeroCanvas');
+const hudHeroCtx = hudHeroCanvas ? hudHeroCanvas.getContext('2d') : null;
+
+function animatePreviewCanvases(now) {
+    const t = now * 0.001;
+    if (hudHeroCtx) {
+        hudHeroCtx.clearRect(0, 0, 34, 34);
+        const bobHud = Math.sin(t * 4.5) * 1.5;
+        drawHeroWithEffects(hudHeroCtx, state.equippedHero || 'patrat_mov', 6, 6 + bobHud, 22, 22, 1, t, bobHud, true);
+    }
+
+    const shopOpen = document.getElementById('modal-shop').classList.contains('open');
+    const passOpen = document.getElementById('modal-pass').classList.contains('open');
+    if ((shopOpen || passOpen) && liveMiniCanvases.length > 0) {
+        for (let i = 0; i < liveMiniCanvases.length; i++) {
+            const item = liveMiniCanvases[i];
+            if (!document.body.contains(item.canvas)) continue;
+            const c = item.canvas;
+            const cctx = item.ctx;
+            cctx.clearRect(0, 0, c.width, c.height);
+            const sz = item.heroSize || 36;
+            const pad = (c.width - sz) / 2;
+            const bob = Math.sin(t * 4.2 + i * 0.9) * 3;
+            drawHeroWithEffects(cctx, item.heroId, pad, pad + bob, sz, sz, 1, t + i * 0.5, bob, true);
+        }
+    }
+}
+
+function mainLoop(now) {
+    stepSimulation();
+    drawFrame();
+    animatePreviewCanvases(now || performance.now());
+    requestAnimationFrame(mainLoop);
+}
+
+// 11. UI, CRONOMETRU 24H, QUESTURI (+3 & BONUS +40), SHOP & PASS
+let toastHandle = null;
+function notify(msg) {
+    const el = document.getElementById('toast-banner');
+    el.textContent = msg;
+    el.classList.add('visible');
+    if (toastHandle) clearTimeout(toastHandle);
+    toastHandle = setTimeout(() => el.classList.remove('visible'), 2500);
+}
+
+function formatTimer(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+}
+
+function dailyRemainingMs() {
+    return Math.max(0, DAY_MILLIS - (Date.now() - (state.lastDailyTs || 0)));
+}
+
+function bonusQuestRemainingMs() {
+    return Math.max(0, DAY_MILLIS - (Date.now() - (state.lastBonusQuestTs || 0)));
+}
+
+function refreshTimersUI() {
+    const rem = dailyRemainingMs();
+    const shopBtn = document.getElementById('btn-shop-daily');
+    if (shopBtn) {
+        if (rem > 0) {
+            shopBtn.classList.add('locked-daily');
+            shopBtn.textContent = `⏳ Următorul câștig în ${formatTimer(rem)}`;
+        } else {
+            shopBtn.classList.remove('locked-daily');
+            shopBtn.textContent = '🎁 Câștig Zilnic: +3 💠 / +25 🪙';
+        }
+    }
+
+    const bonusBtn = document.getElementById('btn-bonus-quest-timer');
+    if (bonusBtn) {
+        const bRem = bonusQuestRemainingMs();
+        if (bRem > 0) {
+            bonusBtn.textContent = `⏳ Revino în ${formatTimer(bRem)}`;
+        }
+    }
+}
+setInterval(refreshTimersUI, 1000);
+
+function claimDailyBonus() {
+    const rem = dailyRemainingMs();
+    if (rem > 0) {
+        notify(`Ai colectat deja azi! Revino în ${formatTimer(rem)} ⏳`);
+        return;
+    }
+    state.lastDailyTs = Date.now();
+    state.galactic += 3;
+    state.coins += 25;
+    persistState();
+    audio.playGalactic();
+    refreshTimersUI();
+    notify('🎁 Câștig Zilnic colectat: +3 Nestemate Galactice și +25 🪙!');
+}
+
+function syncHUD() {
+    document.getElementById('hud-lvl-label').textContent = `Nivel ${state.currentLevel} / ????`;
+    document.getElementById('hud-coins-val').textContent = state.coins.toLocaleString('ro-RO');
+    document.getElementById('hud-diamonds-val').textContent = state.diamonds.toLocaleString('ro-RO');
+    document.getElementById('hud-galactic-val').textContent = state.galactic.toLocaleString('ro-RO');
+    document.getElementById('shop-coins-txt').textContent = state.coins.toLocaleString('ro-RO');
+    document.getElementById('shop-diamonds-txt').textContent = state.diamonds.toLocaleString('ro-RO');
+    refreshTimersUI();
+    syncAbilityBtn();
+}
+
+function syncAbilityBtn() {
+    const meta = currentHeroMeta();
+    const btn = document.getElementById('btn-ability');
+    if (meta.rarity === 'divin') {
+        btn.classList.add('visible');
+        document.getElementById('ability-emoji').textContent = meta.abilityIcon || '⚡';
+        document.getElementById('ability-title').textContent = meta.abilityName || 'ABILITATE';
+        const fill = document.getElementById('cd-fill');
+        const num = document.getElementById('cd-num');
+        if (powerState.cdLeft > 0) {
+            btn.classList.add('cooldown');
+            fill.style.height = `${(powerState.cdLeft / powerState.maxCd) * 100}%`;
+            num.style.display = 'flex';
+            num.textContent = `${powerState.cdLeft.toFixed(1)}s`;
+        } else {
+            btn.classList.remove('cooldown');
+            fill.style.height = '0%';
+            num.style.display = 'none';
+        }
+    } else {
+        btn.classList.remove('visible');
+    }
+}
+
+function syncEffectsStrip() {
+    const strip = document.getElementById('effects-strip');
+    let out = '';
+    if (powerState.solarShield) out += `<div class="fx-pill">🔥 Scut Solar Activ</div>`;
+    if (powerState.kind === 'slowmo') out += `<div class="fx-pill">⏳ Chrono-Slow (${powerState.activeLeft.toFixed(1)}s)</div>`;
+    if (powerState.kind === 'zerog') out += `<div class="fx-pill">🌌 Zero-G + Magnet (${powerState.activeLeft.toFixed(1)}s)</div>`;
+    if (powerState.kind === 'solar') out += `<div class="fx-pill">🔥 Solar Flight (${powerState.activeLeft.toFixed(1)}s)</div>`;
+    if (strip.innerHTML !== out) strip.innerHTML = out;
+}
+
+// Selector Nivele (cu slot final blocat "????")
+function buildLevelsModal() {
+    const matrix = document.getElementById('levels-matrix');
+    matrix.innerHTML = '';
+    document.getElementById('levels-modal-title').textContent =
+        `Alege Nivelul • Nivel ${state.currentLevel} / ????`;
+
+    const topLvl = Math.max(state.unlockedLevel, state.currentLevel);
+    const startLvl = Math.max(1, topLvl - 47);
+    for (let i = startLvl; i <= topLvl; i++) {
+        const cell = document.createElement('button');
+        cell.className = 'lvl-cell fx-btn';
+        if (state.currentLevel === i) cell.classList.add('active-lvl');
+        else if (state.completedLevels.includes(i)) cell.classList.add('done-lvl');
+        cell.textContent = i;
+        cell.addEventListener('click', () => {
+            document.getElementById('modal-levels').classList.remove('open');
+            loadLevel(i);
+        });
+        matrix.appendChild(cell);
+    }
+
+    const myst = document.createElement('button');
+    myst.className = 'lvl-cell fx-btn mystery-cell';
+    myst.textContent = '????';
+    myst.addEventListener('click', () => notify('🔒 Termină nivelul curent pentru a descoperi ce urmează!'));
+    matrix.appendChild(myst);
+}
+
+// Questuri (+3 Nestemate fiecare + Quest Bonus +40 Nestemate)
+function buildQuestsModal() {
+    const list = document.getElementById('quests-scroll');
+    list.innerHTML = '';
+
+    // 1. CARDUL QUEST BONUS SUPREM (+40 NESTEMATE GALACTICE)
+    const bRem = bonusQuestRemainingMs();
+    const bL = Math.min(BONUS_QUEST_DEF.targets.levelsDone, state.bonusStats.levelsDone || 0);
+    const bI = Math.min(BONUS_QUEST_DEF.targets.intrudersKilled, state.bonusStats.intrudersKilled || 0);
+    const bC = Math.min(BONUS_QUEST_DEF.targets.coinsGot, state.bonusStats.coinsGot || 0);
+    const bDone = (bL >= 15 && bI >= 15 && bC >= 250);
+    const bPct = Math.round(((bL / 15 + bI / 15 + bC / 250) / 3) * 100);
+
+    const bonusCard = document.createElement('div');
+    bonusCard.className = `q-item bonus-quest ${bDone && bRem === 0 ? 'claimable' : ''}`;
+
+    let bBtnHtml = `În progres: ${bL}/15 Nivele • ${bI}/15 Intruși • ${bC}/250 Monede`;
+    let bDis = 'disabled';
+    let bIdAttr = '';
+    if (bRem > 0) {
+        bBtnHtml = `⏳ Revino în ${formatTimer(bRem)}`;
+        bIdAttr = 'id="btn-bonus-quest-timer"';
+    } else if (bDone) {
+        bBtnHtml = `Revendică +40 Nestemate Galactice ${gemIconHTML(16)}`;
+        bDis = '';
+    }
+
+    bonusCard.innerHTML = `
+        <div class="q-header-row">
+            <div>
+                <div class="q-name" style="color:#5f3dc4;">${BONUS_QUEST_DEF.name}</div>
+                <div class="q-sub">${BONUS_QUEST_DEF.sub}</div>
+            </div>
+            <div class="q-reward-badge">+40 ${gemIconHTML(15)}</div>
+        </div>
+        <div class="q-bar-track">
+            <div class="q-bar-fill" style="width:${bPct}%;background:linear-gradient(90deg,#3bc9db,#9775fa,#f06595);"></div>
+            <div class="q-bar-txt">${bPct}% Completat</div>
+        </div>
+        <button ${bIdAttr} class="q-btn fx-btn" ${bDis}>${bBtnHtml}</button>
+    `;
+
+    const bonusBtn = bonusCard.querySelector('.q-btn');
+    if (bDone && bRem === 0) {
+        bonusBtn.addEventListener('click', () => {
+            state.lastBonusQuestTs = Date.now();
+            state.bonusStats = { levelsDone: 0, intrudersKilled: 0, coinsGot: 0 };
+            state.galactic += BONUS_QUEST_DEF.reward;
+            state.passXP += 150;
+            persistState();
+            audio.playGalactic();
+            notify('🌟 INCREDIBIL! Ai revendicat +40 Nestemate Galactice din Questul Bonus!');
+            buildQuestsModal();
+        });
+    }
+    list.appendChild(bonusCard);
+
+    // 2. CELE 4 QUESTURI NORMALE (+3 NESTEMATE FIECARE)
+    STANDARD_QUESTS.forEach(q => {
+        const val = Math.min(q.target, state.stats[q.key] || 0);
+        const done = val >= q.target;
+        const pct = Math.min(100, Math.round((val / q.target) * 100));
+
+        const card = document.createElement('div');
+        card.className = `q-item ${done ? 'claimable' : ''}`;
+
+        const btnTxt = done
+            ? `Revendică +3 Nestemate Galactice ${gemIconHTML(15)}`
+            : `În progres (${val} / ${q.target})`;
+
+        card.innerHTML = `
+            <div class="q-header-row">
+                <div>
+                    <div class="q-name">${q.name}</div>
+                    <div class="q-sub">${q.sub}</div>
+                </div>
+                <div class="q-reward-badge">+3 ${gemIconHTML(15)}</div>
+            </div>
+            <div class="q-bar-track">
+                <div class="q-bar-fill" style="width:${pct}%;"></div>
+                <div class="q-bar-txt">${val} / ${q.target}</div>
+            </div>
+            <button class="q-btn fx-btn" ${done ? '' : 'disabled'}>${btnTxt}</button>
+        `;
+
+        const btn = card.querySelector('.q-btn');
+        if (done) {
+            btn.addEventListener('click', () => {
+                state.stats[q.key] = Math.max(0, (state.stats[q.key] || 0) - q.target);
+                state.galactic += q.reward;
+                state.passXP += 50;
+                persistState();
+                audio.playGalactic();
+                notify('Ai primit +3 Nestemate Galactice! ✨');
+                buildQuestsModal();
+            });
+        }
+        list.appendChild(card);
+    });
+}
+
+// Shop Eroi 2.5 (18 Eroi animați live + Filtre 100% vizibile)
+let activeRarityFilter = 'all';
+function buildShopModal() {
+    const grid = document.getElementById('shop-grid');
+    grid.innerHTML = '';
+    liveMiniCanvases = liveMiniCanvases.filter(item => !grid.contains(item.canvas));
+
+    const items = HEROES_CATALOG.filter(h => activeRarityFilter === 'all' || h.rarity === activeRarityFilter);
+    items.forEach(h => {
+        const owned = state.ownedHeroes.includes(h.id);
+        const equipped = state.equippedHero === h.id;
+
+        const box = document.createElement('div');
+        box.className = `hero-box r-${h.rarity} ${equipped ? 'is-equipped' : ''}`;
+
+        let priceTxt = 'GRATUIT';
+        if (h.curr === 'coins' && h.gemPrice) {
+            priceTxt = `<span class="coin-badge-dot" style="width:14px;height:14px;font-size:9px;">1</span> ${h.price} / 💎 ${h.gemPrice}`;
+        } else if (h.curr === 'coins') {
+            priceTxt = `<span class="coin-badge-dot" style="width:14px;height:14px;font-size:9px;">1</span> ${h.price}`;
+        } else if (h.curr === 'pass') {
+            priceTxt = `👑 PREMIUM PASS TIER ${h.passTier}`;
+        }
+
+        let btnsMarkup = '';
+        if (equipped) {
+            btnsMarkup = `<button class="hero-buy-btn fx-btn hb-equipped" data-mode="equipped">✓ ECHIPAT</button>`;
+        } else if (owned) {
+            btnsMarkup = `<button class="hero-buy-btn fx-btn hb-equip" data-mode="equip">Echipează</button>`;
+        } else if (h.curr === 'coins' && h.gemPrice) {
+            btnsMarkup = `
+                <div style="display:flex;gap:6px;">
+                    <button class="hero-buy-btn fx-btn hb-buy" data-mode="coins" style="flex:1;"><span class="coin-badge-dot" style="width:14px;height:14px;font-size:9px;">1</span> ${h.price}</button>
+                    <button class="hero-buy-btn fx-btn" data-mode="gems" style="flex:1;background:#66d9e8;">💎 ${h.gemPrice}</button>
+                </div>
+            `;
+        } else if (h.curr === 'coins') {
+            btnsMarkup = `<button class="hero-buy-btn fx-btn hb-buy" data-mode="coins">Cumpără (<span class="coin-badge-dot" style="width:14px;height:14px;font-size:9px;">1</span> ${h.price})</button>`;
+        } else {
+            btnsMarkup = `<button class="hero-buy-btn fx-btn hb-pass" data-mode="pass">👑 Revendică din Premium Pass (Tier ${h.passTier})</button>`;
+        }
+
+        const abNote = h.abilityDesc
+            ? `<div class="hero-ability-note"><span>${h.abilityIcon}</span><span>${h.abilityDesc}</span></div>`
+            : '';
+
+        box.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span class="rarity-chip chip-${h.rarity}">${h.tag}</span>
+                <span style="font-size:12px;font-weight:900;">${owned ? 'DEBLOCAT' : priceTxt}</span>
+            </div>
+            <div class="hero-mid-row">
+                <div class="hero-avatar-frame"><canvas width="64" height="64"></canvas></div>
+                <div>
+                    <h4 style="font-size:15px;font-weight:900;">${h.name}</h4>
+                    <p style="font-size:11.5px;font-weight:700;color:#495057;line-height:1.25;">${h.desc}</p>
+                </div>
+            </div>
+            ${abNote}
+            ${btnsMarkup}
+        `;
+
+        const c = box.querySelector('canvas');
+        liveMiniCanvases.push({ canvas: c, ctx: c.getContext('2d'), heroId: h.id, heroSize: 36 });
+
+        box.querySelectorAll('.hero-buy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.mode;
+                if (mode === 'equipped') return;
+                if (mode === 'equip') {
+                    state.equippedHero = h.id;
+                    persistState();
+                    audio.playClick();
+                    notify(`Ai echipat: ${h.name}!`);
+                    buildShopModal();
+                    return;
+                }
+                if (mode === 'coins') {
+                    if (state.coins >= h.price) {
+                        state.coins -= h.price;
+                        state.ownedHeroes.push(h.id);
+                        state.equippedHero = h.id;
+                        persistState();
+                        audio.playClick();
+                        notify(`Ai deblocat ${h.name}! 🎉`);
+                        buildShopModal();
+                    } else notify(`Ai nevoie de ${h.price} monede!`);
+                } else if (mode === 'gems') {
+                    if (state.diamonds >= h.gemPrice) {
+                        state.diamonds -= h.gemPrice;
+                        state.ownedHeroes.push(h.id);
+                        state.equippedHero = h.id;
+                        persistState();
+                        audio.playDiamond();
+                        notify(`Ai deblocat ${h.name} cu 💎! 🔥`);
+                        buildShopModal();
+                    } else notify(`Ai nevoie de ${h.gemPrice} diamante!`);
+                } else {
+                    document.getElementById('modal-shop').classList.remove('open');
+                    buildPassModal();
+                    document.getElementById('modal-pass').classList.add('open');
+                }
+            });
+        });
+
+        grid.appendChild(box);
+    });
+}
+
+// Parkour Pass pe 2 rânduri CU 5 EROI EXCLUSIVI ANIMAȚI LIVE ÎN RÂNDUL DE SUS!
+function buildPassModal() {
+    const tierReached = Math.min(15, Math.floor(state.passXP / 100) + 1);
+    const remXP = state.passXP % 100;
+    document.getElementById('pass-xp-fill').style.width = `${tierReached >= 15 ? 100 : remXP}%`;
+    document.getElementById('pass-xp-txt').textContent =
+        tierReached >= 15 ? `Tier MAXIM (15) • ${state.passXP} XP` : `Tier ${tierReached} / 15 • ${remXP} / 100 XP`;
+
+    const premBtn = document.getElementById('btn-unlock-prem');
+    if (state.premiumUnlocked) {
+        premBtn.innerHTML = '👑 Premium Galactic Activ';
+        premBtn.classList.add('active-prem');
+    } else {
+        premBtn.innerHTML = `👑 Deblochează Premium (3.000 ${gemIconHTML(15)})`;
+        premBtn.classList.remove('active-prem');
+    }
+
+    const wrap = document.getElementById('pass-row-wrapper');
+    wrap.innerHTML = `
+        <div class="pass-sticky-labels">
+            <div class="track-header-card th-prem"><span style="font-size:20px;">👑</span><span>PREMIUM<br>PASS</span></div>
+            <div class="track-header-card th-free"><span style="font-size:20px;">🎁</span><span>FREE<br>PASS</span></div>
+        </div>
+    `;
+
+    SEASON_TIERS.forEach(item => {
+        const unlocked = item.tier <= tierReached;
+        const pTaken = state.claimedPrem.includes(item.tier);
+        const fTaken = state.claimedFree.includes(item.tier);
+        const isHeroPrem = item.premRew.kind === 'hero';
+        const isHeroEquipped = isHeroPrem && state.equippedHero === item.premRew.heroId;
+
+        const col = document.createElement('div');
+        col.className = 'tier-column';
+
+        let pCls = 'slot-claim-btn fx-btn', pTxt = 'Revendică';
+        if (pTaken) {
+            if (isHeroPrem) {
+                if (isHeroEquipped) {
+                    pCls += ' done';
+                    pTxt = '✓ Echipat';
+                } else {
+                    pCls += ' equip-pass-hero';
+                    pTxt = 'Echipează';
+                }
+            } else {
+                pCls += ' done';
+                pTxt = '✓ Luat';
+            }
+        } else if (!state.premiumUnlocked || !unlocked) {
+            pCls += ' locked';
+            pTxt = !state.premiumUnlocked ? '🔒 3.000 Nest.' : `Tier ${item.tier}`;
+        } else if (isHeroPrem) {
+            pTxt = 'Revendică Eroul!';
+        }
+
+        let fCls = 'slot-claim-btn fx-btn', fTxt = 'Revendică';
+        if (fTaken) { fCls += ' done'; fTxt = '✓ Luat'; }
+        else if (!unlocked) { fCls += ' locked'; fTxt = `Tier ${item.tier}`; }
+
+        const premVisualHtml = isHeroPrem
+            ? `<canvas class="pass-hero-canvas" width="52" height="52" style="margin-top:6px;border-radius:10px;background:rgba(15,23,42,0.55);border:2px solid #fcc419;"></canvas>`
+            : `<div style="font-size:25px;margin-top:8px;">${item.premRew.icon}</div>`;
+
+        col.innerHTML = `
+            <div class="reward-slot slot-prem ${isHeroPrem ? 'has-hero-reward' : ''} ${(!unlocked || !state.premiumUnlocked) && !pTaken ? 'dimmed' : ''}">
+                <span class="tier-tag">TIER ${item.tier}</span>
+                ${premVisualHtml}
+                <div style="font-size:10px;font-weight:900;line-height:1.15;">${item.premRew.text}</div>
+                <button class="${pCls}" data-row="prem" data-t="${item.tier}">${pTxt}</button>
+            </div>
+            <div class="reward-slot slot-free ${!unlocked && !fTaken ? 'dimmed' : ''}">
+                <span class="tier-tag">TIER ${item.tier}</span>
+                <div style="font-size:24px;margin-top:8px;">${item.freeRew.icon}</div>
+                <div style="font-size:10.5px;font-weight:800;line-height:1.15;">${item.freeRew.text}</div>
+                <button class="${fCls}" data-row="free" data-t="${item.tier}">${fTxt}</button>
+            </div>
+        `;
+
+        if (isHeroPrem) {
+            const hc = col.querySelector('.pass-hero-canvas');
+            liveMiniCanvases.push({ canvas: hc, ctx: hc.getContext('2d'), heroId: item.premRew.heroId, heroSize: 30 });
+        }
+
+        col.querySelectorAll('.slot-claim-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const row = btn.dataset.row;
+                const t = Number(btn.dataset.t);
+                if (row === 'prem') {
+                    if (pTaken && isHeroPrem) {
+                        state.equippedHero = item.premRew.heroId;
+                        persistState();
+                        audio.playClick();
+                        notify(`Ai echipat eroul din Pass: ${item.premRew.text}! ⚡`);
+                        buildPassModal();
+                        return;
+                    }
+                    if (!state.premiumUnlocked) {
+                        notify('Deblochează mai întâi Premium Pass cu 3.000 Nestemate Galactice!');
+                        return;
+                    }
+                    if (t > tierReached) {
+                        notify(`Avansează până la Tier ${t} în Pass!`);
+                        return;
+                    }
+                    if (state.claimedPrem.includes(t)) return;
+                    state.claimedPrem.push(t);
+                    applyPassLoot(item.premRew);
+                } else {
+                    if (t > tierReached) {
+                        notify(`Avansează până la Tier ${t} în Pass!`);
+                        return;
+                    }
+                    if (state.claimedFree.includes(t)) return;
+                    state.claimedFree.push(t);
+                    applyPassLoot(item.freeRew);
+                }
+                persistState();
+                buildPassModal();
+            });
+        });
+
+        wrap.appendChild(col);
+    });
+}
+
+function applyPassLoot(loot) {
+    audio.playClick();
+    if (loot.kind === 'coins') { state.coins += loot.val; notify(`Ai primit +${loot.val} Monede! 🪙`); }
+    else if (loot.kind === 'diamonds') { state.diamonds += loot.val; notify(`Ai primit +${loot.val} Diamante! 💎`); }
+    else if (loot.kind === 'galactic') { state.galactic += loot.val; notify(`Ai primit +${loot.val} Nestemate Galactice! ✨`); }
+    else if (loot.kind === 'hero') {
+        if (!state.ownedHeroes.includes(loot.heroId)) state.ownedHeroes.push(loot.heroId);
+        state.equippedHero = loot.heroId;
+        notify(`🏆 Ai revendicat și echipat eroul: ${loot.text}!`);
+    }
+}
+
+// 12. LEGARE EVENIMENTE BUTOANE
+document.getElementById('btn-hud-hero').addEventListener('click', () => {
+    buildShopModal();
+    document.getElementById('modal-shop').classList.add('open');
+});
+
+document.getElementById('btn-shop-daily').addEventListener('click', claimDailyBonus);
+
+document.getElementById('btn-levels').addEventListener('click', () => {
+    buildLevelsModal();
+    document.getElementById('modal-levels').classList.add('open');
+});
+document.getElementById('close-levels').addEventListener('click', () => document.getElementById('modal-levels').classList.remove('open'));
+
+document.getElementById('btn-quests').addEventListener('click', () => {
+    buildQuestsModal();
+    document.getElementById('modal-quests').classList.add('open');
+});
+document.getElementById('close-quests').addEventListener('click', () => document.getElementById('modal-quests').classList.remove('open'));
+
+document.getElementById('btn-shop').addEventListener('click', () => {
+    buildShopModal();
+    document.getElementById('modal-shop').classList.add('open');
+});
+document.getElementById('close-shop').addEventListener('click', () => document.getElementById('modal-shop').classList.remove('open'));
+
+document.getElementById('btn-pass').addEventListener('click', () => {
+    buildPassModal();
+    document.getElementById('modal-pass').classList.add('open');
+});
+document.getElementById('close-pass').addEventListener('click', () => document.getElementById('modal-pass').classList.remove('open'));
+
+document.getElementById('btn-unlock-prem').addEventListener('click', () => {
+    if (state.premiumUnlocked) return;
+    if (state.galactic >= PREMIUM_COST) {
+        state.galactic -= PREMIUM_COST;
+        state.premiumUnlocked = true;
+        persistState();
+        audio.playWin();
+        buildPassModal();
+        notify('👑 Ai deblocat PREMIUM PASS! Revendică cei 5 Eroi Exclusivi!');
+    } else {
+        notify(`Ai nevoie de 3.000 Nestemate (îți mai lipsesc ${PREMIUM_COST - state.galactic} din Questuri!)`);
+    }
+});
+
+document.getElementById('btn-rotate').addEventListener('click', async () => {
+    try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen().catch(() => {});
+        }
+        if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+            cssLandscapeOn = false;
+            document.body.classList.remove('css-landscape');
+            updateCanvasDimensions();
+            notify('Mod Orizontal (Landscape) activat! 🔄');
+            return;
+        }
+    } catch (e) {}
+
+    cssLandscapeOn = !cssLandscapeOn;
+    document.body.classList.toggle('css-landscape', cssLandscapeOn);
+    updateCanvasDimensions();
+    notify(cssLandscapeOn ? 'Mod Orizontal (CSS 90°) activat! 🔄' : 'Mod Normal activat!');
+});
+
+document.getElementById('btn-sound').addEventListener('click', (e) => {
+    audio.muted = !audio.muted;
+    e.currentTarget.textContent = audio.muted ? '🔇' : '🔊';
+    notify(audio.muted ? 'Sunet Oprit' : 'Sunet Pornit');
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+    loadLevel(state.currentLevel);
+    notify('Nivel reînceput!');
+});
+
+document.getElementById('btn-next-lvl').addEventListener('click', () => {
+    loadLevel(state.currentLevel + 1);
+});
+
+document.querySelectorAll('#shop-filters .filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+        document.querySelectorAll('#shop-filters .filter-pill').forEach(p => p.classList.remove('selected'));
+        pill.classList.add('selected');
+        activeRarityFilter = pill.dataset.rar;
+        buildShopModal();
+    });
+});
+
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => {
+        if (e.target === ov) ov.classList.remove('open');
+    });
+});
+
+// 13. INIȚIALIZARE LA ÎNCĂRCAREA PAGINII
+window.onload = function () {
+    runStartupLoading();
+    syncHUD();
+    loadLevel(state.currentLevel || 1);
+    requestAnimationFrame(mainLoop);
+};
+</script>
+</body>
+</html>
+```

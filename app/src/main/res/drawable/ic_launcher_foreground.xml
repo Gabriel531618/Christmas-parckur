@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Earthy shore & snow cap platform -->
+    <path
+        android:fillColor="#5C3A21"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="2.5"
+        android:pathData="M24,73 L84,73 L84,83 L24,83 Z" />
+    <path
+        android:fillColor="#F8FCFF"
+        android:pathData="M24,72 L84,72 L84,77 L24,77 Z" />
+
+    <!-- Festive Christmas Tree behind Snowman hero -->
+    <path
+        android:fillColor="#15803D"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="2.5"
+        android:pathData="M67,29 L82,53 L75,53 L84,72 L50,72 L59,53 L52,53 Z" />
+    <!-- Tree Top Star -->
+    <path
+        android:fillColor="#FCC419"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="1.6"
+        android:pathData="M67,21 L69.5,26.5 L75,27.5 L71,31.5 L72,37 L67,34 L62,37 L63,31.5 L59,27.5 L64.5,26.5 Z" />
+    <!-- Tree Lights -->
+    <path android:fillColor="#FA5252" android:pathData="M63,46 a2.5,2.5 0 1,0 0.1,0 Z" />
+    <path android:fillColor="#FCC419" android:pathData="M72,58 a2.5,2.5 0 1,0 0.1,0 Z" />
+    <path android:fillColor="#4DABF7" android:pathData="M60,62 a2.5,2.5 0 1,0 0.1,0 Z" />
+
+    <!-- Snowman Hero -->
+    <path
+        android:fillColor="#F8FCFF"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="2.8"
+        android:pathData="M43,39 a14,14 0 1,0 0.1,0 Z" />
+    <!-- Santa Hat -->
+    <path
+        android:fillColor="#E03131"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="2.2"
+        android:pathData="M31,42 L43,27 L55,42 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="1.8"
+        android:pathData="M29,41 L57,41 L57,46 L29,46 Z" />
+    <!-- Eyes & Carrot Nose -->
+    <path android:fillColor="#0F172A" android:pathData="M39,50 a2,2 0 1,0 0.1,0 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M48,50 a2,2 0 1,0 0.1,0 Z" />
+    <path
+        android:fillColor="#FF922B"
+        android:strokeColor="#0F172A"
+        android:strokeWidth="1.4"
+        android:pathData="M43,53 L51,55 L43,57 Z" />
+</vector>

@@ -1,0 +1,6 @@
+{
+  "name": "Christmas Parkour",
+  "description": "Parkour Adventure 2.5 - Christmas Edition: festive winter platformer with 18 animated Christmas heroes, big swaying decorated tree, bubble jumps, Christmas checkpoints, quests, shop, and 15-tier Pass.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
