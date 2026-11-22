@@ -109,8 +109,8 @@ fun ParkourAdventureScreen() {
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember(context) { CredentialManager.create(context) }
-    val webClientId = remember(context) { context.getString(R.string.default_web_client_id) }
-val webClientId = ""
+  val webClientId = ""
+
     fun launchGoogleSignIn() {
         coroutineScope.launch {
             viewModel.setAuthLoading(true)
